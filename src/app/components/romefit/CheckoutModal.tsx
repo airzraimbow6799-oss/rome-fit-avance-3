@@ -18,6 +18,15 @@ type EntregaType = 'tienda' | 'delivery';
 type PagoType    = 'plin'   | 'yape' | 'tarjeta' | 'contra';
 type ModalStep   = 'form'   | 'processing' | 'completed';
 
+interface CartLineItem {
+  id: string;
+  name: string;
+  price: string;
+  size: string;
+  quantity: number;
+  customLabel?: string;
+}
+
 export interface CheckoutModalProps {
   open: boolean;
   onClose: () => void;
@@ -26,6 +35,8 @@ export interface CheckoutModalProps {
   size?: string;
   qty?: number;
   isConfeccion?: boolean;
+  cartMode?: boolean;
+  cartItems?: CartLineItem[];
 }
 
 /* ── QR Code SVG placeholder ─────────────────────────────────────── */
@@ -166,12 +177,23 @@ export function CheckoutModal({
   size = 'M',
   qty = 1,
   isConfeccion = false,
+  cartMode = false,
+  cartItems = [],
 }: CheckoutModalProps) {
   const { isMobile } = useResponsive();
 
+  /* ── Derive effective display values from cart when in cartMode ── */
+  const effItems      = cartMode && cartItems.length > 0 ? cartItems : null;
+  const effConfeccion = effItems ? effItems.some(i => !!i.customLabel) : isConfeccion;
+  const effName       = effItems
+    ? (effItems.length === 1 ? effItems[0].name : `${effItems.length} productos`)
+    : productName;
+  const effSize       = effItems && effItems.length === 1 ? effItems[0].size : size;
+  const effQty        = effItems ? effItems.reduce((s, i) => s + i.quantity, 0) : qty;
+
   /* ── State ── */
   // Confección siempre requiere delivery — no se puede recoger en tienda
-  const [entrega,  setEntrega]  = useState<EntregaType>(isConfeccion ? 'delivery' : 'tienda');
+  const [entrega,  setEntrega]  = useState<EntregaType>(effConfeccion ? 'delivery' : 'tienda');
   const [pago,     setPago]     = useState<PagoType>('plin');
   const [step,     setStep]     = useState<ModalStep>('form');
 
@@ -194,13 +216,13 @@ export function CheckoutModal({
   /* Reset on open */
   useEffect(() => {
     if (open) {
-      setEntrega(isConfeccion ? 'delivery' : 'tienda');
+      setEntrega(effConfeccion ? 'delivery' : 'tienda');
       setPago('plin'); setStep('form');
       setDistrito(''); setDireccion(''); setReferencia('');
       setCardNum(''); setCardName(''); setCardExpiry(''); setCardCvv('');
       setVerifying(false); setQrVerified(false); setShowSuccess(false);
     }
-  }, [open, isConfeccion]);
+  }, [open, effConfeccion]);
 
   /* Reset QR state when payment changes */
   function changePago(p: PagoType) {
@@ -247,16 +269,18 @@ export function CheckoutModal({
   /* ── Can proceed? ── */
   const canProceed = isQrPago ? qrVerified : true;
 
-  const baseAmount   = parseFloat(price.replace('S/. ', '')) * qty;
-  const envioAmount  = isConfeccion ? 20.00 : (entrega === 'delivery' ? 8.00 : 0);
+  const baseAmount   = effItems
+    ? effItems.reduce((s, i) => s + parseFloat(i.price.replace('S/. ', '')) * i.quantity, 0)
+    : parseFloat(price.replace('S/. ', '')) * qty;
+  const envioAmount  = effConfeccion ? 20.00 : (entrega === 'delivery' ? 8.00 : 0);
   const totalAmount  = baseAmount + envioAmount;
   const totalPrice   = `S/. ${totalAmount.toFixed(2)}`;
   const orderNum     = `RF-${Date.now().toString().slice(-6)}`;
 
   /* Display label for size */
-  const sizeLabel    = isConfeccion ? `${size} — Confección Artesanal` : size;
+  const sizeLabel    = effConfeccion ? `${effSize} — Confección Artesanal` : effSize;
   /* Delivery time label */
-  const deliveryTime = isConfeccion
+  const deliveryTime = effConfeccion
     ? '7–10 días hábiles (confección + envío)'
     : entrega === 'delivery' ? '1–3 días hábiles' : '24–48h';
 
@@ -331,26 +355,54 @@ export function CheckoutModal({
               {/* Order summary mini */}
               <div style={{
                 margin: '14px 24px', padding: '12px 14px',
-                backgroundColor: isConfeccion ? '#f5f0ff' : '#f8f8f8',
-                border: isConfeccion ? '1.5px solid #ddd0ff' : 'none',
+                backgroundColor: effConfeccion ? '#f5f0ff' : '#f8f8f8',
+                border: effConfeccion ? '1.5px solid #ddd0ff' : 'none',
                 borderRadius: 8,
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                {effItems && effItems.length > 1 ? (
+                  /* Multi-item cart list */
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: C.black }}>{productName}</div>
-                    <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>
-                      Talla <strong style={{ color: C.black }}>{size}</strong>
-                      {isConfeccion && <span style={{ marginLeft: 4, backgroundColor: '#111', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, letterSpacing: '0.5px' }}>ARTESANAL</span>}
-                      {' '}· Cant. {qty}
-                    </div>
-                    {isConfeccion && (
-                      <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 4, fontWeight: 600 }}>
-                        ✂ Incluye envío express S/. 20.00
+                    {effItems.map((item, i) => (
+                      <div key={item.id + i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: i < effItems.length - 1 ? 8 : 0 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: C.black }}>{item.name}</div>
+                          <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>
+                            Talla <strong style={{ color: C.black }}>{item.size}</strong>
+                            {item.customLabel && <span style={{ marginLeft: 4, backgroundColor: '#111', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, letterSpacing: '0.5px' }}>ARTESANAL</span>}
+                            {' '}· Cant. {item.quantity}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.black, flexShrink: 0 }}>
+                          S/. {(parseFloat(item.price.replace('S/. ', '')) * item.quantity).toFixed(2)}
+                        </div>
                       </div>
+                    ))}
+                    {effConfeccion && (
+                      <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 6, fontWeight: 600 }}>✂ Incluye envío express S/. 20.00</div>
                     )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e0e0e0' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: C.black }}>{totalPrice}</div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: C.black, flexShrink: 0 }}>{totalPrice}</div>
-                </div>
+                ) : (
+                  /* Single item */
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.black }}>{effName}</div>
+                      <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>
+                        Talla <strong style={{ color: C.black }}>{effSize}</strong>
+                        {effConfeccion && <span style={{ marginLeft: 4, backgroundColor: '#111', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, letterSpacing: '0.5px' }}>ARTESANAL</span>}
+                        {' '}· Cant. {effQty}
+                      </div>
+                      {effConfeccion && (
+                        <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 4, fontWeight: 600 }}>
+                          ✂ Incluye envío express S/. 20.00
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.black, flexShrink: 0 }}>{totalPrice}</div>
+                  </div>
+                )}
               </div>
 
               <div style={{ padding: isMobile ? '0 16px 24px' : '0 24px 24px' }}>
@@ -360,7 +412,7 @@ export function CheckoutModal({
                   <SectionTitle n={1}>Método de Entrega</SectionTitle>
 
                   {/* Aviso confección: solo delivery */}
-                  {isConfeccion && (
+                  {effConfeccion && (
                     <div style={{
                       marginBottom: 10, padding: '10px 14px',
                       backgroundColor: '#fffbeb', border: '1.5px solid #fbbf24',
@@ -377,24 +429,24 @@ export function CheckoutModal({
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     {/* Tienda — deshabilitado si es confección */}
-                    <div style={{ flex: 1, opacity: isConfeccion ? 0.4 : 1, pointerEvents: isConfeccion ? 'none' : 'auto' }}>
+                    <div style={{ flex: 1, opacity: effConfeccion ? 0.4 : 1, pointerEvents: effConfeccion ? 'none' : 'auto' }}>
                       <RadioOption selected={entrega === 'tienda'} onClick={() => setEntrega('tienda')}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: entrega === 'tienda' ? 600 : 400, color: C.black }}>
                             🏪 Recoger en tienda
                           </div>
                           <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>Gratis · 24–48h</div>
-                          {isConfeccion && <div style={{ fontSize: 10, color: '#dc2626', marginTop: 2 }}>No disponible para confección</div>}
+                          {effConfeccion && <div style={{ fontSize: 10, color: '#dc2626', marginTop: 2 }}>No disponible para confección</div>}
                         </div>
                       </RadioOption>
                     </div>
                     <RadioOption selected={entrega === 'delivery'} onClick={() => setEntrega('delivery')}>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: entrega === 'delivery' ? 600 : 400, color: C.black }}>
-                          🛵 {isConfeccion ? 'Envío Express' : 'Delivery'}
+                          🛵 {effConfeccion ? 'Envío Express' : 'Delivery'}
                         </div>
                         <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>
-                          {isConfeccion ? 'S/. 20.00 · 7–10 días hábiles' : 'S/. 8.00 · 1–3 días'}
+                          {effConfeccion ? 'S/. 20.00 · 7–10 días hábiles' : 'S/. 8.00 · 1–3 días'}
                         </div>
                       </div>
                     </RadioOption>
@@ -772,13 +824,22 @@ export function CheckoutModal({
                   backgroundColor: '#f8f8f8', borderRadius: 8,
                   fontSize: 13, fontFamily: 'Inter, sans-serif',
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 6 }}>
-                    <span>{productName} × {qty}</span>
-                    <span>S/. {(parseFloat(price.replace('S/. ', '')) * qty).toFixed(2)}</span>
-                  </div>
-                  {(isConfeccion || entrega === 'delivery') && (
+                  {effItems && effItems.length > 1 ? (
+                    effItems.map((item, i) => (
+                      <div key={item.id + i} style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 6 }}>
+                        <span>{item.name} × {item.quantity}</span>
+                        <span>S/. {(parseFloat(item.price.replace('S/. ', '')) * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 6 }}>
-                      <span>{isConfeccion ? 'Envío Express (confección)' : 'Envío delivery'}</span>
+                      <span>{effName} × {effQty}</span>
+                      <span>S/. {baseAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {(effConfeccion || entrega === 'delivery') && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 6 }}>
+                      <span>{effConfeccion ? 'Envío Express (confección)' : 'Envío delivery'}</span>
                       <span>S/. {envioAmount.toFixed(2)}</span>
                     </div>
                   )}
@@ -893,9 +954,9 @@ export function CheckoutModal({
 
                 {/* Detail rows */}
                 {[
-                  { icon: '👕', label: 'Producto',  value: productName },
-                  { icon: '📐', label: 'Talla',     value: sizeLabel },
-                  { icon: '📦', label: 'Cantidad',  value: `${qty} unidad${qty > 1 ? 'es' : ''}` },
+                  { icon: '👕', label: 'Producto',  value: effName },
+                  { icon: '📐', label: 'Talla',     value: effItems && effItems.length > 1 ? effItems.map(i => i.size).join(', ') : sizeLabel },
+                  { icon: '📦', label: 'Cantidad',  value: `${effQty} unidad${effQty > 1 ? 'es' : ''}` },
                   { icon: '🛵', label: 'Entrega', value: entrega === 'delivery' ? `Delivery${distrito ? ` a ${distrito}` : ''}` : 'Recojo en tienda' },
                   { icon: '⏱', label: 'Tiempo estimado', value: deliveryTime },
                   { icon: '💳', label: 'Método de pago', value: pago === 'plin' ? 'Plin' : pago === 'yape' ? 'Yape' : pago === 'tarjeta' ? 'Tarjeta débito/crédito' : 'Contra entrega' },
@@ -918,7 +979,7 @@ export function CheckoutModal({
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888888', letterSpacing: '0.8px', marginBottom: 12 }}>
                     ESTADO DEL PEDIDO
                   </div>
-                  {(isConfeccion ? [
+                  {(effConfeccion ? [
                     { done: true,  label: 'Pago confirmado',         sub: 'Hace un momento' },
                     { done: true,  label: 'Solicitud en confección',  sub: 'Patronaje iniciado' },
                     { done: false, label: 'En confección artesanal',  sub: '5–7 días hábiles' },
