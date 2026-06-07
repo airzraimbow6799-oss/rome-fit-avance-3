@@ -538,6 +538,50 @@ export default function App() {
           onAddToCart={addToCart}
           onAddToCartAndOpen={addToCartAndOpen}
           savedProfile={savedProfile}
+          onPurchaseComplete={(orderData) => {
+            const now = new Date();
+            const dateStr = `${now.getDate()} ${['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][now.getMonth()]} ${now.getFullYear()}`;
+            const isCustom = orderData.isCustom ?? false;
+            const newOrder: Order = {
+              id: `order-${Date.now()}-${Math.random()}`,
+              orderNum: `RF-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`,
+              date: dateStr,
+              productName: orderData.productName,
+              size: orderData.size as SizeName,
+              quantity: orderData.qty,
+              price: orderData.price,
+              brand: orderData.brand,
+              isCustom,
+              customLabel: orderData.customLabel,
+              wizardInfo: orderData.wizardInfo,
+              status: 'processing' as const,
+              trackingSteps: isCustom ? [
+                { label: 'Pago confirmado', sublabel: 'Hace un momento', completed: true },
+                { label: 'Solicitud en confección', sublabel: 'Patronaje iniciado', completed: true },
+                { label: 'En confección artesanal', sublabel: '5–7 días hábiles', completed: false },
+                { label: 'Preparando envío', sublabel: 'Control de calidad', completed: false },
+                { label: 'Enviado a domicilio', sublabel: 'Express', completed: false },
+              ] : [
+                { label: 'Pago confirmado', sublabel: 'Hace un momento', completed: true },
+                { label: 'Pedido registrado', sublabel: 'En preparación', completed: true },
+                { label: 'En camino a tu dirección', sublabel: '1–3 días hábiles', completed: false },
+              ],
+            };
+            setOrders(prev => [...prev, newOrder]);
+            if (orderData.wizardInfo || isCustom) {
+              setSavedProfile(prev => ({
+                altura:     orderData.wizardInfo?.altura     || prev?.altura     || '',
+                peso:       orderData.wizardInfo?.peso       || prev?.peso       || '',
+                pecho:      orderData.wizardInfo?.pecho      || prev?.pecho      || '',
+                complexion: orderData.wizardInfo?.complexion || prev?.complexion || '',
+                fitStyle:   orderData.wizardInfo?.fitStyle   || prev?.fitStyle   || '',
+                lastSize:   orderData.size as SizeName,
+                wasCustom:  isCustom,
+              }));
+            } else {
+              setSavedProfile(prev => prev ? { ...prev, lastSize: orderData.size as SizeName, wasCustom: false } : prev);
+            }
+          }}
         />
       </div>
       <div style={{ display: activePage === 'profile' ? 'block' : 'none' }}>
@@ -767,8 +811,8 @@ export default function App() {
       {/* ── Cart Checkout Modal ── */}
       <CheckoutModal
         open={checkoutModalOpen}
-        onClose={() => {
-          setCheckoutModalOpen(false);
+        onClose={() => setCheckoutModalOpen(false)}
+        onComplete={() => {
           if (cart.length > 0) {
             const now = new Date();
             const dateStr = `${now.getDate()} ${['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][now.getMonth()]} ${now.getFullYear()}`;
@@ -801,11 +845,9 @@ export default function App() {
               };
             });
             setOrders(prev => [...prev, ...newOrders]);
-            // Always update profile with latest purchase data
             setSavedProfile(prev => {
               const first = cart[0];
               const wi = first.wizardInfo;
-              // Keep existing measurements if this purchase has no wizard info
               const hasWizardData = wi?.altura || wi?.peso || wi?.pecho;
               return {
                 altura:     hasWizardData ? (wi?.altura     || '') : (prev?.altura     || ''),

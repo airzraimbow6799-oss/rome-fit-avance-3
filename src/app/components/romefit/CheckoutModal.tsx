@@ -30,6 +30,7 @@ interface CartLineItem {
 export interface CheckoutModalProps {
   open: boolean;
   onClose: () => void;
+  onComplete?: () => void;
   productName?: string;
   price?: string;
   size?: string;
@@ -171,7 +172,7 @@ function SectionTitle({ n, children }: { n: number; children: React.ReactNode })
 
 /* ── Main Component ──────────────────────────────────────────────── */
 export function CheckoutModal({
-  open, onClose,
+  open, onClose, onComplete,
   productName = 'Polo RomeFit Classic',
   price = 'S/. 79.90',
   size = 'M',
@@ -264,6 +265,7 @@ export function CheckoutModal({
     setStep('processing');
     await new Promise(r => setTimeout(r, 1800));
     setStep('completed');
+    onComplete?.();
   }
 
   /* ── Can proceed? ── */

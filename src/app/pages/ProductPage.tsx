@@ -161,6 +161,17 @@ function CardBadge({ children, bg }: { children: React.ReactNode; bg: string }) 
 }
 
 // ── Props ────────────────────────────────────────────────────────
+interface PurchaseOrderData {
+  productName: string;
+  price: string;
+  size: string;
+  qty: number;
+  brand?: string;
+  isCustom?: boolean;
+  customLabel?: string;
+  wizardInfo?: { fitStyle?: string; complexion?: string; altura?: string; peso?: string; pecho?: string };
+}
+
 interface ProductPageProps {
   accessibleMode?: boolean;
   autoOpenWizard?: boolean;
@@ -177,6 +188,7 @@ interface ProductPageProps {
   onAddToCart?: (item: any) => void;
   onAddToCartAndOpen?: (item: any) => void;
   savedProfile?: SavedProfile | null;
+  onPurchaseComplete?: (order: PurchaseOrderData) => void;
 }
 
 export function ProductPage({
@@ -195,6 +207,7 @@ export function ProductPage({
   onAddToCart,
   onAddToCartAndOpen,
   savedProfile,
+  onPurchaseComplete,
 }: ProductPageProps) {
   const { isMobile, isTablet } = useResponsive();
 
@@ -642,6 +655,25 @@ export function ProductPage({
       <CheckoutModal
         open={checkoutOpen}
         onClose={() => { setCheckoutOpen(false); setConfeccionInfo(null); }}
+        onComplete={() => {
+          const isCustom = !!confeccionInfo;
+          onPurchaseComplete?.({
+            productName: product.name,
+            price: product.price,
+            size: confeccionInfo?.size ?? activeSize,
+            qty,
+            brand: product.brand,
+            isCustom,
+            customLabel: isCustom ? `Confección personalizada – ${confeccionInfo?.size}` : undefined,
+            wizardInfo: isCustom ? {
+              altura:     savedProfile?.altura     || '',
+              peso:       savedProfile?.peso       || '',
+              pecho:      savedProfile?.pecho      || '',
+              complexion: savedProfile?.complexion || '',
+              fitStyle:   savedProfile?.fitStyle   || '',
+            } : undefined,
+          });
+        }}
         productName={product.name}
         price={product.price}
         size={confeccionInfo?.size ?? activeSize}
