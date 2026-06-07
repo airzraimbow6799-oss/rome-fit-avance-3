@@ -504,6 +504,18 @@ export default function App() {
           }}
           cartItemCount={cartItemCount}
           onCartClick={() => setCartModalOpen(true)}
+          savedProfile={savedProfile}
+          onWizardProfileSave={(data) => {
+            setSavedProfile({
+              altura:     data.altura,
+              peso:       data.peso,
+              pecho:      data.pecho,
+              complexion: data.complexion,
+              fitStyle:   data.fitStyle,
+              lastSize:   data.lastSize,
+              wasCustom:  false,
+            });
+          }}
         />
       </div>
       <div style={{ display: activePage === 'product' ? 'block' : 'none' }}>
@@ -789,17 +801,18 @@ export default function App() {
               };
             });
             setOrders(prev => [...prev, ...newOrders]);
-            // Save profile from first purchase
+            // Always update profile with latest purchase data
             setSavedProfile(prev => {
-              if (prev) return prev;
               const first = cart[0];
               const wi = first.wizardInfo;
+              // Keep existing measurements if this purchase has no wizard info
+              const hasWizardData = wi?.altura || wi?.peso || wi?.pecho;
               return {
-                altura:     wi?.altura     || '',
-                peso:       wi?.peso       || '',
-                pecho:      wi?.pecho      || '',
-                complexion: wi?.complexion || '',
-                fitStyle:   wi?.fitStyle   || '',
+                altura:     hasWizardData ? (wi?.altura     || '') : (prev?.altura     || ''),
+                peso:       hasWizardData ? (wi?.peso       || '') : (prev?.peso       || ''),
+                pecho:      hasWizardData ? (wi?.pecho      || '') : (prev?.pecho      || ''),
+                complexion: hasWizardData ? (wi?.complexion || '') : (prev?.complexion || ''),
+                fitStyle:   hasWizardData ? (wi?.fitStyle   || '') : (prev?.fitStyle   || ''),
                 lastSize:   first.size,
                 wasCustom:  !!first.customLabel,
               };

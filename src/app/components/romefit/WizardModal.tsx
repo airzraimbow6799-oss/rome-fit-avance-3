@@ -971,7 +971,7 @@ interface PrefillData {
 interface WizardModalProps {
   open: boolean;
   onClose: () => void;
-  onSizeSelected: (size: SizeName, match: number) => void;
+  onSizeSelected: (size: SizeName, match: number, wizardData?: PrefillData) => void;
   shirtColor?: string;
   productName?: string;
   price?: string;
@@ -1097,7 +1097,13 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
 
   function handleApply() {
     if (result) {
-      onSizeSelected(result.size, result.match);
+      onSizeSelected(result.size, result.match, {
+        altura:     data.altura,
+        peso:       data.peso,
+        pecho:      data.pecho,
+        complexion: data.complexion,
+        fitStyle:   data.fitStyle,
+      });
       onClose();
     }
   }

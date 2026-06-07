@@ -328,6 +328,11 @@ function ProductPickerModal({
 }
 
 /* ── HomePage props ──────────────────────────────────────────── */
+interface WizardProfileData {
+  altura: string; peso: string; pecho: string;
+  complexion: string; fitStyle: string; lastSize: SizeName;
+}
+
 interface HomePageProps {
   accessibleMode?: boolean;
   onStartWizard?: () => void;
@@ -341,6 +346,8 @@ interface HomePageProps {
   onProductSelect?: (productId: string) => void;
   cartItemCount?: number;
   onCartClick?: () => void;
+  onWizardProfileSave?: (data: WizardProfileData) => void;
+  savedProfile?: { altura?: string; peso?: string; pecho?: string; complexion?: string; fitStyle?: string } | null;
 }
 
 /* ── HomePage ─────────────────────────────────────────────────── */
@@ -357,6 +364,8 @@ export function HomePage({
   onProductSelect,
   cartItemCount = 0,
   onCartClick,
+  onWizardProfileSave,
+  savedProfile,
 }: HomePageProps) {
   const { isMobile, isTablet } = useResponsive();
 
@@ -370,11 +379,21 @@ export function HomePage({
   const filteredProducts = PRODUCTS.filter(p => productMatchesCollection(p, activeCollection));
   const sectionTitle = activeCollection ? COLLECTION_LABEL[activeCollection] : 'NEW ARRIVALS';
 
-  /* After wizard completes → show product picker */
-  function handleWizardDone(size: SizeName) {
+  /* After wizard completes → save measurements to profile + show product picker */
+  function handleWizardDone(size: SizeName, _match: number, wizardData?: { altura?: string; peso?: string; pecho?: string; complexion?: string; fitStyle?: string }) {
     setWizardSize(size);
     setWizardOpen(false);
     setPickerOpen(true);
+    if (wizardData) {
+      onWizardProfileSave?.({
+        altura:     wizardData.altura    ?? '',
+        peso:       wizardData.peso      ?? '',
+        pecho:      wizardData.pecho     ?? '',
+        complexion: wizardData.complexion ?? '',
+        fitStyle:   wizardData.fitStyle   ?? '',
+        lastSize:   size,
+      });
+    }
   }
 
   /* Product picked from picker → go directly to ProductPage (login happens at purchase) */
@@ -599,6 +618,7 @@ export function HomePage({
         shirtColor="#111111"
         productName="Selecciona una prenda"
         price=""
+        prefillData={savedProfile ?? undefined}
       />
 
       {/* ── Product Picker (post-wizard) ── */}
