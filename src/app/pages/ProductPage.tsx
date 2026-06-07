@@ -545,6 +545,9 @@ export function ProductPage({
             <button
               onClick={() => {
                 if (isLoggedIn) {
+                  if (savedProfile?.wasCustom) {
+                    setConfeccionInfo({ size: savedProfile.lastSize });
+                  }
                   setCheckoutOpen(true);
                 } else {
                   onLoginClick?.();
@@ -591,6 +594,13 @@ export function ProductPage({
         shirtColor={shirtColor}
         productName={product.name}
         price={product.price}
+        prefillData={savedProfile ? {
+          altura:     savedProfile.altura,
+          peso:       savedProfile.peso,
+          pecho:      savedProfile.pecho,
+          complexion: savedProfile.complexion,
+          fitStyle:   savedProfile.fitStyle,
+        } : undefined}
         onProcederAlPago={(size) => {
           if (isLoggedIn) {
             setConfeccionInfo({ size });

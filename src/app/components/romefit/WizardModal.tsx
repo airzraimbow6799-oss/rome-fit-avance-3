@@ -33,66 +33,67 @@ const PECHO_MIN  = 60;  // cm
 
 /* ── Size computation ──────────────────────────────────────────── */
 // ALL_SIZES index: XS=0, S=1, M=2, L=3, XL=4, XXL=5, XXXL=6
+// Sizing based on standard Latino/Peruvian male shirt measurements
 function computeRecommendation(data: WizardData, seed: number) {
   const peso   = parseFloat(data.peso);
   const altura = parseFloat(data.altura);
   const pecho  = parseFloat(data.pecho);
 
   let sizeIdx = 2; // default M
-  let confidence: 'Alta' | 'Media' | 'Baja' = 'Media';
+  let confidence: 'Alta' | 'Media' | 'Baja' = 'Baja';
 
-  // Base calculation on BMI
-  if (!isNaN(peso) && !isNaN(altura) && altura > 0) {
+  const hasPecho  = !isNaN(pecho) && pecho > 0;
+  const hasBMI    = !isNaN(peso) && !isNaN(altura) && altura > 0;
+
+  // Primary: chest circumference — most accurate metric for shirt sizing
+  if (hasPecho) {
+    if      (pecho < 88)  sizeIdx = 0; // XS: ≤87 cm
+    else if (pecho < 94)  sizeIdx = 1; // S: 88–93 cm
+    else if (pecho < 100) sizeIdx = 2; // M: 94–99 cm
+    else if (pecho < 106) sizeIdx = 3; // L: 100–105 cm
+    else if (pecho < 114) sizeIdx = 4; // XL: 106–113 cm
+    else if (pecho < 122) sizeIdx = 5; // XXL: 114–121 cm
+    else                  sizeIdx = 6; // XXXL: ≥122 cm
+    confidence = 'Alta';
+  }
+
+  // Secondary: BMI — used alone or to nudge chest-based result
+  if (hasBMI) {
     const bmi = peso / Math.pow(altura / 100, 2);
-    if      (bmi < 18.5) sizeIdx = 0;
-    else if (bmi < 21.5) sizeIdx = 1;
-    else if (bmi < 24.5) sizeIdx = 2;
-    else if (bmi < 27.5) sizeIdx = 3;
-    else if (bmi < 30.0) sizeIdx = 4;
-    else if (bmi < 35.0) sizeIdx = 5; // XXL
-    else                 sizeIdx = 6; // XXXL
+    let bmiIdx = 2;
+    if      (bmi < 18.5) bmiIdx = 0;
+    else if (bmi < 21.5) bmiIdx = 1;
+    else if (bmi < 24.5) bmiIdx = 2;
+    else if (bmi < 27.5) bmiIdx = 3;
+    else if (bmi < 31.0) bmiIdx = 4;
+    else if (bmi < 35.0) bmiIdx = 5;
+    else                 bmiIdx = 6;
 
-    confidence = 'Media';
+    if (hasPecho) {
+      // Both provided: if they diverge by ≥2 steps, nudge chest result 1 step toward BMI
+      const diff = bmiIdx - sizeIdx;
+      if (Math.abs(diff) >= 2) sizeIdx = sizeIdx + Math.sign(diff);
+    } else {
+      sizeIdx    = bmiIdx;
+      confidence = 'Media';
+    }
   }
 
-  // Pecho measurement adjustment (more accurate)
-  if (pecho && !isNaN(pecho)) {
-    if      (pecho < 86)  sizeIdx = Math.min(sizeIdx, 0); // XS
-    else if (pecho < 91)  sizeIdx = Math.min(sizeIdx, 1); // S
-    else if (pecho < 96)  sizeIdx = Math.min(sizeIdx, 2); // M
-    else if (pecho < 101) sizeIdx = Math.min(sizeIdx, 3); // L
-    else if (pecho < 106) sizeIdx = Math.min(sizeIdx, 4); // XL
-    else if (pecho < 116) sizeIdx = 5; // XXL
-    else                  sizeIdx = 6; // XXXL
+  // Complexion adjustment (shoulders/torso build)
+  if (data.complexion === 'Delgado')  sizeIdx = Math.max(0, sizeIdx - 1);
+  if (data.complexion === 'Atlético') sizeIdx = Math.min(6, sizeIdx + 1);
+  if (data.complexion === 'Robusto')  sizeIdx = Math.min(6, sizeIdx + 1);
+  if (data.complexion && confidence === 'Baja') confidence = 'Media';
 
-    confidence = 'Alta'; // Pecho measurement gives high confidence
-  }
-
-  // Complexion adjustment
-  if (data.complexion === 'Delgado' && sizeIdx > 0) sizeIdx = Math.max(0, sizeIdx - 1);
-  if (data.complexion === 'Atlético') {
-    // Atlético usually needs 1 size up due to shoulders/chest
-    sizeIdx = Math.min(6, sizeIdx + 1);
-    if (confidence === 'Media') confidence = 'Alta';
-  }
-  if (data.complexion === 'Robusto') sizeIdx = Math.min(6, sizeIdx + 1);
-  if (data.complexion) confidence = confidence === 'Baja' ? 'Media' : confidence;
-
-  // Fit style adjustment
-  if (data.fitStyle === 'Muy Justo' && sizeIdx > 0) sizeIdx--;
+  // Fit style preference
+  if (data.fitStyle === 'Muy Justo'         && sizeIdx > 0) sizeIdx--;
   if (data.fitStyle === 'Oversize Moderado' && sizeIdx < 6) sizeIdx++;
-  if (data.fitStyle === 'Oversize Extremo') sizeIdx = Math.min(6, sizeIdx + 2);
+  if (data.fitStyle === 'Oversize Extremo')                 sizeIdx = Math.min(6, sizeIdx + 2);
 
-  // Marca de referencia adjustment (if provided)
-  if (data.marca && data.tallaHabitual) {
-    // User provided reference, increase confidence
-    if (confidence === 'Media') confidence = 'Alta';
-  }
+  // Reference brand confirms data → upgrade confidence
+  if (data.marca && data.tallaHabitual && confidence !== 'Alta') confidence = 'Alta';
 
-  // If minimal data, lower confidence
-  if (!pecho && (!peso || !altura)) {
-    confidence = 'Baja';
-  }
+  if (!hasPecho && !hasBMI) confidence = 'Baja';
 
   const clamped = Math.max(0, Math.min(6, sizeIdx));
   const size    = ALL_SIZES[clamped];
@@ -959,6 +960,14 @@ function StepResult({
 }
 
 /* ── Main Wizard Modal ──────────────────────────────────────────── */
+interface PrefillData {
+  altura?: string;
+  peso?: string;
+  pecho?: string;
+  complexion?: string;
+  fitStyle?: string;
+}
+
 interface WizardModalProps {
   open: boolean;
   onClose: () => void;
@@ -968,9 +977,10 @@ interface WizardModalProps {
   price?: string;
   onProcederAlPago?: (confeccionSize: SizeName) => void;
   onAddToCartConfeccion?: (size: SizeName, fitStyle?: string, complexion?: string, altura?: string, peso?: string, pecho?: string) => void;
+  prefillData?: PrefillData;
 }
 
-export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffffff', productName, price, onProcederAlPago, onAddToCartConfeccion }: WizardModalProps) {
+export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffffff', productName, price, onProcederAlPago, onAddToCartConfeccion, prefillData }: WizardModalProps) {
   const { isMobile } = useResponsive();
   const [step, setStep]   = useState(0);
   const [data, setData]   = useState<WizardData>({
@@ -987,11 +997,19 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
   const seedRef = useRef(Math.floor(Math.random() * 100));
   const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset on open
+  // Reset on open — pre-fill saved measurements when available
   useEffect(() => {
     if (open) {
       setStep(0);
-      setData({ altura: '', peso: '', pecho: '', complexion: '', fitStyle: 'Oversize Moderado', marca: '', tallaHabitual: '' });
+      setData({
+        altura:       prefillData?.altura      ?? '',
+        peso:         prefillData?.peso        ?? '',
+        pecho:        prefillData?.pecho       ?? '',
+        complexion:   (prefillData?.complexion as Complexion) ?? '',
+        fitStyle:     (prefillData?.fitStyle   as FitStyle)   ?? 'Oversize Moderado',
+        marca:        '',
+        tallaHabitual: '',
+      });
       setResult(null);
       setLoading(false);
       setShowConfeccion(false);
@@ -1000,7 +1018,7 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
       setShowDisabledMsg(false);
       seedRef.current = Math.floor(Math.random() * 100);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Live recommendation (updates instantly on every selection)
   const liveRec  = computeRecommendation(data, seedRef.current);
