@@ -17,6 +17,7 @@ interface CartItem {
   image: string;
   size: SizeName;
   quantity: number;
+  brand?: string;
   customLabel?: string;
   wizardInfo?: { fitStyle?: string; complexion?: string; altura?: string; peso?: string; pecho?: string };
 }
@@ -29,11 +30,22 @@ interface Order {
   size: SizeName;
   quantity: number;
   price: string;
+  brand?: string;
   isCustom: boolean;
   customLabel?: string;
   wizardInfo?: { fitStyle?: string; complexion?: string; altura?: string; peso?: string; pecho?: string };
   status: 'paid' | 'processing' | 'crafting' | 'shipping' | 'delivered';
   trackingSteps: TrackingStep[];
+}
+
+interface SavedProfile {
+  altura: string;
+  peso: string;
+  pecho: string;
+  complexion: string;
+  fitStyle: string;
+  lastSize: SizeName;
+  wasCustom: boolean;
 }
 
 interface TrackingStep {
@@ -58,6 +70,7 @@ export default function App() {
   const [userEmail, setUserEmail] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [savedProfile, setSavedProfile] = useState<SavedProfile | null>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [cartModalOpen, setCartModalOpen] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
@@ -512,6 +525,7 @@ export default function App() {
           onCartClick={() => setCartModalOpen(true)}
           onAddToCart={addToCart}
           onAddToCartAndOpen={addToCartAndOpen}
+          savedProfile={savedProfile}
         />
       </div>
       <div style={{ display: activePage === 'profile' ? 'block' : 'none' }}>
@@ -529,6 +543,8 @@ export default function App() {
           cartItemCount={cartItemCount}
           onCartClick={() => setCartModalOpen(true)}
           orders={orders}
+          savedProfile={savedProfile}
+          onSavedProfileChange={setSavedProfile}
         />
       </div>
 
@@ -741,22 +757,20 @@ export default function App() {
         open={checkoutModalOpen}
         onClose={() => {
           setCheckoutModalOpen(false);
-          // Clear cart and create orders after successful checkout
           if (cart.length > 0) {
-            const newOrders: Order[] = cart.map(item => {
-              const orderNum = `RF-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
+            const now = new Date();
+            const dateStr = `${now.getDate()} ${['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][now.getMonth()]} ${now.getFullYear()}`;
+            const newOrders: Order[] = cart.map((item, idx) => {
               const isCustom = !!item.customLabel;
-              const now = new Date();
-              const dateStr = `${now.getDate()} ${['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][now.getMonth()]} ${now.getFullYear()}`;
-
               return {
-                id: `order-${Date.now()}-${Math.random()}`,
-                orderNum,
+                id: `order-${Date.now()}-${idx}-${Math.random()}`,
+                orderNum: `RF-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`,
                 date: dateStr,
                 productName: item.name,
                 size: item.size,
                 quantity: item.quantity,
                 price: item.price,
+                brand: item.brand,
                 isCustom,
                 customLabel: item.customLabel,
                 wizardInfo: item.wizardInfo,
@@ -775,6 +789,21 @@ export default function App() {
               };
             });
             setOrders(prev => [...prev, ...newOrders]);
+            // Save profile from first purchase
+            setSavedProfile(prev => {
+              if (prev) return prev;
+              const first = cart[0];
+              const wi = first.wizardInfo;
+              return {
+                altura:     wi?.altura     || '',
+                peso:       wi?.peso       || '',
+                pecho:      wi?.pecho      || '',
+                complexion: wi?.complexion || '',
+                fitStyle:   wi?.fitStyle   || '',
+                lastSize:   first.size,
+                wasCustom:  !!first.customLabel,
+              };
+            });
             setCart([]);
           }
         }}

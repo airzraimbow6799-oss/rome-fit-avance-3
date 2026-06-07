@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { C, SizeName } from '../components/romefit/tokens';
+import { SizeName } from '../components/romefit/tokens';
 import { Header } from '../components/romefit/Header';
 import { useResponsive } from '../hooks/useResponsive';
 import { motion, AnimatePresence } from 'motion/react';
+
+interface SavedProfile {
+  altura: string;
+  peso: string;
+  pecho: string;
+  complexion: string;
+  fitStyle: string;
+  lastSize: SizeName;
+  wasCustom: boolean;
+}
 
 interface ProfilePageProps {
   accessibleMode?: boolean;
@@ -15,6 +25,8 @@ interface ProfilePageProps {
   cartItemCount?: number;
   onCartClick?: () => void;
   orders?: Order[];
+  savedProfile?: SavedProfile | null;
+  onSavedProfileChange?: (p: SavedProfile) => void;
 }
 
 interface SavedMeasures {
@@ -45,6 +57,7 @@ interface Order {
   size: SizeName;
   quantity: number;
   price: string;
+  brand?: string;
   isCustom: boolean;
   customLabel?: string;
   wizardInfo?: { fitStyle?: string; complexion?: string; altura?: string; peso?: string; pecho?: string };
@@ -73,13 +86,18 @@ export function ProfilePage({
   onProductSelect,
   cartItemCount,
   onCartClick,
-  orders = []
+  orders = [],
+  savedProfile,
+  onSavedProfileChange,
 }: ProfilePageProps) {
   const { isMobile, isTablet } = useResponsive();
   const [isEditingMeasures, setIsEditingMeasures] = useState(false);
   const [activeTab, setActiveTab] = useState<TabView>('recomendaciones');
 
-  const [userName] = useState('Carlos Mendoza');
+  const [userName, setUserName] = useState('Carlos Mendoza');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('Carlos Mendoza');
+
   const [savedMeasures, setSavedMeasures] = useState<SavedMeasures>({
     altura: '175',
     peso: '70',
@@ -87,6 +105,32 @@ export function ProfilePage({
     complexion: 'Atlético',
     fitStyle: 'Oversize Moderado',
   });
+
+  // Sync savedMeasures from savedProfile prop when it arrives
+  useEffect(() => {
+    if (!savedProfile) return;
+    setSavedMeasures(prev => ({
+      altura:     savedProfile.altura     || prev.altura,
+      peso:       savedProfile.peso       || prev.peso,
+      pecho:      savedProfile.pecho      || prev.pecho,
+      complexion: savedProfile.complexion || prev.complexion,
+      fitStyle:   savedProfile.fitStyle   || prev.fitStyle,
+    }));
+  }, [savedProfile]);
+
+  function handleSaveMeasures() {
+    setIsEditingMeasures(false);
+    if (savedProfile && onSavedProfileChange) {
+      onSavedProfileChange({
+        ...savedProfile,
+        altura:     savedMeasures.altura,
+        peso:       savedMeasures.peso,
+        pecho:      savedMeasures.pecho,
+        complexion: savedMeasures.complexion,
+        fitStyle:   savedMeasures.fitStyle,
+      });
+    }
+  }
 
   // Derived from orders prop — updates automatically when orders change
   const recommendationHistory: RecommendationHistory[] = orders.map((order) => ({
@@ -96,31 +140,18 @@ export function ProfilePage({
     date: order.date,
   }));
 
-  // Auto-fill measures from first custom order's wizard data
-  useEffect(() => {
-    const firstCustom = orders.find(o => o.isCustom && o.wizardInfo);
-    if (!firstCustom?.wizardInfo) return;
-    const w = firstCustom.wizardInfo;
-    setSavedMeasures(prev => ({
-      altura:     w.altura     || prev.altura,
-      peso:       w.peso       || prev.peso,
-      pecho:      w.pecho      || prev.pecho,
-      complexion: w.complexion || prev.complexion,
-      fitStyle:   w.fitStyle   || prev.fitStyle,
-    }));
-  }, [orders]);
-
   const [votes, setVotes] = useState<Record<string, 'yes' | 'no'>>({});
   const [voteToast, setVoteToast] = useState<{ id: string; msg: string } | null>(null);
   const voteTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Extract unique brands from orders
-  const brandReferences: BrandReference[] = orders.length > 0
-    ? Array.from(new Set(orders.map(o => o.productName.split(' ')[0]))).map((brand, idx) => ({
-        brand,
-        size: orders.find(o => o.productName.startsWith(brand))?.size ?? 'M',
-      }))
-    : [];
+  // Extract unique brands from orders using the brand field
+  const brandReferences: BrandReference[] = Array.from(
+    new Map(
+      orders
+        .filter((o): o is Order & { brand: string } => !!o.brand)
+        .map(o => [o.brand, { brand: o.brand, size: o.size }])
+    ).values()
+  );
 
   function handleVote(id: string, vote: 'yes' | 'no') {
     setVotes((prev) => {
@@ -137,7 +168,7 @@ export function ProfilePage({
     voteTimerRef.current = setTimeout(() => setVoteToast(null), 2000);
   }
 
-  const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+  const initials = userName.trim().split(/\s+/).map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const contentPad = isMobile ? '0 16px 100px' : isTablet ? '0 24px 80px' : '0 40px 80px';
 
   const tabs: { id: TabView; label: string; icon: string; count: number }[] = [
@@ -189,27 +220,55 @@ export function ProfilePage({
             <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_COLOR, letterSpacing: '2px', marginBottom: 6, textTransform: 'uppercase' }}>
               Mi Perfil
             </div>
-            <h1 style={{ fontSize: isMobile ? 22 : 30, fontWeight: 800, color: '#ffffff', margin: '0 0 4px', letterSpacing: '-0.5px' }}>
-              {userName}
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              {isEditingName ? (
+                <input
+                  autoFocus
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { setUserName(nameInput); setIsEditingName(false); }
+                    if (e.key === 'Escape') { setNameInput(userName); setIsEditingName(false); }
+                  }}
+                  style={{
+                    fontSize: isMobile ? 18 : 24,
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: `1.5px solid ${BRAND_COLOR}`,
+                    borderRadius: 6,
+                    padding: '4px 10px',
+                    outline: 'none',
+                    fontFamily: 'Inter, sans-serif',
+                    letterSpacing: '-0.5px',
+                    width: isMobile ? 180 : 240,
+                  }}
+                />
+              ) : (
+                <h1 style={{ fontSize: isMobile ? 22 : 30, fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.5px' }}>
+                  {userName}
+                </h1>
+              )}
+              {isEditingName ? (
+                <button
+                  onClick={() => { setUserName(nameInput); setIsEditingName(false); }}
+                  style={{ background: BRAND_COLOR, border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700, padding: '5px 10px', fontFamily: 'Inter, sans-serif' }}
+                >
+                  ✓
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setNameInput(userName); setIsEditingName(true); }}
+                  title="Editar nombre"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 14, padding: '4px 8px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, fontWeight: 400 }}>
               Miembro desde Abril 2026 · {userEmail || 'carlos@romefit.pe'}
             </p>
-          </div>
-          {/* Member badge */}
-          <div style={{
-            padding: '8px 14px',
-            background: `${BRAND_COLOR}18`,
-            border: `1px solid ${BRAND_COLOR}40`,
-            borderRadius: 20,
-            fontSize: 11,
-            fontWeight: 700,
-            color: BRAND_COLOR,
-            letterSpacing: '0.5px',
-            flexShrink: 0,
-            display: isMobile ? 'none' : 'block',
-          }}>
-            PREMIUM
           </div>
         </div>
       </div>
@@ -286,7 +345,7 @@ export function ProfilePage({
                 </span>
               </div>
               <button
-                onClick={() => setIsEditingMeasures(!isEditingMeasures)}
+                onClick={() => isEditingMeasures ? handleSaveMeasures() : setIsEditingMeasures(true)}
                 style={{
                   backgroundColor: isEditingMeasures ? '#16a34a' : BRAND_COLOR,
                   color: '#ffffff',

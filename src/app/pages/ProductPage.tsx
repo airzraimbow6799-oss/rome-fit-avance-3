@@ -28,6 +28,7 @@ interface MeasLabel { icon: string; label: string }
 interface ProductConfig {
   id: string;
   name: string;
+  brand: string;
   price: string;
   priceNum: number;
   hasLongSleeves: boolean;
@@ -42,10 +43,21 @@ interface ProductConfig {
   collection: string;
 }
 
+interface SavedProfile {
+  altura: string;
+  peso: string;
+  pecho: string;
+  complexion: string;
+  fitStyle: string;
+  lastSize: SizeName;
+  wasCustom: boolean;
+}
+
 const PRODUCTS: Record<string, ProductConfig> = {
   'essential-regular': {
     id: 'essential-regular',
     name: 'ESSENTIAL REGULAR TEE',
+    brand: 'ROME FIT',
     price: 'S/. 89.90',
     priceNum: 89.90,
     hasLongSleeves: false,
@@ -69,6 +81,7 @@ const PRODUCTS: Record<string, ProductConfig> = {
   'feather-thunder': {
     id: 'feather-thunder',
     name: 'FEATHER & THUNDER BOXY LONG SLEEVE',
+    brand: 'FEATHER & THUNDER',
     price: 'S/. 139.90',
     priceNum: 139.90,
     hasLongSleeves: true,
@@ -92,6 +105,7 @@ const PRODUCTS: Record<string, ProductConfig> = {
   'second-revelation': {
     id: 'second-revelation',
     name: 'SECOND REVELATION RELAX',
+    brand: 'SECOND REVELATION',
     price: 'S/. 119.90',
     priceNum: 119.90,
     hasLongSleeves: false,
@@ -115,6 +129,7 @@ const PRODUCTS: Record<string, ProductConfig> = {
   'strong-legacy': {
     id: 'strong-legacy',
     name: 'STRONG LEGACY RELAX TEE',
+    brand: 'STRONG LEGACY',
     price: 'S/. 79.00',
     priceNum: 79.00,
     hasLongSleeves: false,
@@ -161,6 +176,7 @@ interface ProductPageProps {
   onCartClick?: () => void;
   onAddToCart?: (item: any) => void;
   onAddToCartAndOpen?: (item: any) => void;
+  savedProfile?: SavedProfile | null;
 }
 
 export function ProductPage({
@@ -178,6 +194,7 @@ export function ProductPage({
   onCartClick,
   onAddToCart,
   onAddToCartAndOpen,
+  savedProfile,
 }: ProductPageProps) {
   const { isMobile, isTablet } = useResponsive();
 
@@ -196,10 +213,11 @@ export function ProductPage({
   const [pendingConfeccion,   setPendingConfeccion]   = useState<{ size: SizeName } | null>(null);
   const [pendingCartItem,     setPendingCartItem]     = useState<any | null>(null);
   const [sizeComparisonOpen,  setSizeComparisonOpen]  = useState(false);
+  const [autoAddedCustom,     setAutoAddedCustom]     = useState(false);
 
   // Reset state whenever the product changes
   useEffect(() => {
-    setActiveSize('M');
+    setActiveSize(savedProfile && !savedProfile.wasCustom ? savedProfile.lastSize : 'M');
     setActiveColor(0);
     setActiveImage(0);
     setQty(1);
@@ -210,6 +228,7 @@ export function ProductPage({
     setPendingConfeccion(null);
     setPendingCartItem(null);
     setWizardOpen(false);
+    setAutoAddedCustom(false);
   }, [selectedProductId]);
 
   // Auto-open wizard when requested from outside (e.g. "Calcular Talla" button)
@@ -252,18 +271,40 @@ export function ProductPage({
   }
 
   function handleAddToCart() {
-    if (onAddToCart) {
-      onAddToCart({
+    if (savedProfile?.wasCustom) {
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.gallery[0],
+        size: savedProfile.lastSize,
+        quantity: qty,
+        brand: product.brand,
+        customLabel: 'Personalización Artesanal',
+        wizardInfo: {
+          fitStyle:   savedProfile.fitStyle,
+          complexion: savedProfile.complexion,
+          altura:     savedProfile.altura,
+          peso:       savedProfile.peso,
+          pecho:      savedProfile.pecho,
+        },
+      };
+      onAddToCartAndOpen?.(cartItem);
+      setAutoAddedCustom(true);
+      setTimeout(() => setAutoAddedCustom(false), 3500);
+    } else {
+      onAddToCart?.({
         id: product.id,
         name: product.name,
         price: product.price,
         image: product.gallery[0],
         size: activeSize,
         quantity: qty,
+        brand: product.brand,
       });
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2200);
     }
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2200);
   }
 
   const gallery = product.gallery;
@@ -386,10 +427,31 @@ export function ProductPage({
             </div>
           </div>
 
+          {/* Saved profile banner */}
+          {savedProfile && (
+            <div style={{
+              background: savedProfile.wasCustom ? '#fff8f0' : '#f0fdf4',
+              border: `1px solid ${savedProfile.wasCustom ? '#f97316' : '#22c55e'}40`,
+              borderRadius: 8,
+              padding: '9px 14px',
+              marginBottom: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 15 }}>{savedProfile.wasCustom ? '✂️' : '📏'}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: savedProfile.wasCustom ? '#9a3412' : '#166534' }}>
+                {savedProfile.wasCustom
+                  ? 'Perfil artesanal guardado — se enviará a confección automáticamente'
+                  : `Talla guardada de tu perfil: ${savedProfile.lastSize} — pre-seleccionada`}
+              </span>
+            </div>
+          )}
+
           {/* Size selector */}
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.gray, marginBottom: 10 }}>
-              TALLA: <strong style={{ color: C.black }}>{activeSize}</strong>
+              TALLA: <strong style={{ color: C.black }}>{savedProfile && !savedProfile.wasCustom ? savedProfile.lastSize : activeSize}</strong>
             </div>
             <div style={{ display: 'flex', gap: isMobile ? 8 : 10, flexWrap: 'wrap' }}>
               {SIZES.map((s) => (
@@ -477,8 +539,8 @@ export function ProductPage({
 
           {/* CTA Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={handleAddToCart} style={{ height: 50, backgroundColor: addedToCart ? C.greenPrimary : C.white, color: addedToCart ? C.white : C.black, border: `1px solid ${addedToCart ? C.greenPrimary : C.black}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.5px', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s' }}>
-              {addedToCart ? '✓ AÑADIDO A LA CESTA' : 'AÑADIR A LA CESTA'}
+            <button onClick={handleAddToCart} style={{ height: 50, backgroundColor: (addedToCart || autoAddedCustom) ? C.greenPrimary : C.white, color: (addedToCart || autoAddedCustom) ? C.white : C.black, border: `1px solid ${(addedToCart || autoAddedCustom) ? C.greenPrimary : C.black}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.5px', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s' }}>
+              {autoAddedCustom ? '✓ ENVIADO A CONFECCIÓN' : addedToCart ? '✓ AÑADIDO A LA CESTA' : savedProfile?.wasCustom ? '✂ AÑADIR A CONFECCIÓN ARTESANAL' : 'AÑADIR A LA CESTA'}
             </button>
             <button
               onClick={() => {
@@ -546,6 +608,7 @@ export function ProductPage({
             image: product.gallery[0],
             size,
             quantity: qty,
+            brand: product.brand,
             customLabel: 'Personalización Artesanal',
             wizardInfo: { fitStyle, complexion, altura, peso, pecho },
           };
