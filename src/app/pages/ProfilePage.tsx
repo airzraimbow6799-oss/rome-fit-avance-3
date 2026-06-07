@@ -99,11 +99,11 @@ export function ProfilePage({
   const [nameInput, setNameInput] = useState('Carlos Mendoza');
 
   const [savedMeasures, setSavedMeasures] = useState<SavedMeasures>({
-    altura: '175',
-    peso: '70',
-    pecho: '95',
-    complexion: 'Atlético',
-    fitStyle: 'Oversize Moderado',
+    altura: savedProfile?.altura || '',
+    peso: savedProfile?.peso || '',
+    pecho: savedProfile?.pecho || '',
+    complexion: savedProfile?.complexion || '',
+    fitStyle: savedProfile?.fitStyle || '',
   });
 
   // Sync savedMeasures from savedProfile prop when it arrives

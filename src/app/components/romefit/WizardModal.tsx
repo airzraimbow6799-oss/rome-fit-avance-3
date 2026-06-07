@@ -1089,6 +1089,14 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
       if (rec.needsConfeccion) {
         setConfeccionSize(rec.size);
         setShowConfeccion(true);
+        // Forward wizard data to parent so profile measurements are saved
+        onSizeSelected(rec.size, rec.match, {
+          altura:     data.altura,
+          peso:       data.peso,
+          pecho:      data.pecho,
+          complexion: data.complexion,
+          fitStyle:   data.fitStyle,
+        });
       } else {
         setResult(rec);
       }

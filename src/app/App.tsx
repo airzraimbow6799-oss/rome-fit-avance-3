@@ -538,6 +538,17 @@ export default function App() {
           onAddToCart={addToCart}
           onAddToCartAndOpen={addToCartAndOpen}
           savedProfile={savedProfile}
+          onWizardProfileSave={(data) => {
+            setSavedProfile({
+              altura:     data.altura,
+              peso:       data.peso,
+              pecho:      data.pecho,
+              complexion: data.complexion,
+              fitStyle:   data.fitStyle,
+              lastSize:   data.lastSize,
+              wasCustom:  false,
+            });
+          }}
           onPurchaseComplete={(orderData) => {
             const now = new Date();
             const dateStr = `${now.getDate()} ${['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][now.getMonth()]} ${now.getFullYear()}`;

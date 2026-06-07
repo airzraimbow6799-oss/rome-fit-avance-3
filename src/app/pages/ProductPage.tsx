@@ -189,6 +189,7 @@ interface ProductPageProps {
   onAddToCartAndOpen?: (item: any) => void;
   savedProfile?: SavedProfile | null;
   onPurchaseComplete?: (order: PurchaseOrderData) => void;
+  onWizardProfileSave?: (data: { altura: string; peso: string; pecho: string; complexion: string; fitStyle: string; lastSize: SizeName }) => void;
 }
 
 export function ProductPage({
@@ -208,6 +209,7 @@ export function ProductPage({
   onAddToCartAndOpen,
   savedProfile,
   onPurchaseComplete,
+  onWizardProfileSave,
 }: ProductPageProps) {
   const { isMobile, isTablet } = useResponsive();
 
@@ -278,9 +280,19 @@ export function ProductPage({
     setActiveImage(i === 0 ? 0 : 2);
   }
 
-  function handleSizeFromWizard(size: SizeName, match: number) {
+  function handleSizeFromWizard(size: SizeName, match: number, wizardData?: { altura?: string; peso?: string; pecho?: string; complexion?: string; fitStyle?: string }) {
     setActiveSize(size);
     setMatchResult({ size, match });
+    if (wizardData) {
+      onWizardProfileSave?.({
+        altura:     wizardData.altura     || '',
+        peso:       wizardData.peso       || '',
+        pecho:      wizardData.pecho      || '',
+        complexion: wizardData.complexion || '',
+        fitStyle:   wizardData.fitStyle   || '',
+        lastSize:   size,
+      });
+    }
   }
 
   function handleAddToCart() {
