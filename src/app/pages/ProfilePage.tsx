@@ -93,6 +93,7 @@ export function ProfilePage({
   const { isMobile, isTablet } = useResponsive();
   const [isEditingMeasures, setIsEditingMeasures] = useState(false);
   const [activeTab, setActiveTab] = useState<TabView>('recomendaciones');
+  const [simDays, setSimDays] = useState<Record<string, number>>({});
 
   const [userName, setUserName] = useState('Carlos Mendoza');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -804,55 +805,169 @@ export function ProfilePage({
                         </div>
 
                         {/* Tracking timeline */}
-                        <div style={{ padding: isMobile ? '16px 18px 20px' : '20px 28px 24px' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 16 }}>
-                            SEGUIMIENTO DEL PEDIDO
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {order.trackingSteps.map((step, idx, arr) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                {/* Timeline dot + connector */}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                                  <div style={{
-                                    width: 24,
-                                    height: 24,
-                                    borderRadius: '50%',
-                                    backgroundColor: step.completed ? BRAND_COLOR : '#242424',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: 11,
-                                    boxShadow: step.completed ? `0 0 0 3px ${BRAND_COLOR}20` : 'none',
-                                  }}>
-                                    {step.completed ? <span style={{ color: '#ffffff' }}>✓</span> : <span style={{ color: '#555', fontSize: 8 }}>●</span>}
-                                  </div>
-                                  {idx < arr.length - 1 && (
-                                    <div style={{
-                                      width: 2,
-                                      height: 28,
-                                      backgroundColor: step.completed ? BRAND_COLOR : '#242424',
-                                      marginTop: 2,
-                                    }} />
+                        {(() => {
+                          const day = simDays[order.id] ?? 0;
+                          const maxDay = order.isCustom ? 9 : 2;
+                          const isComplete = day >= maxDay;
+                          const isDeliveryDay = order.isCustom ? day === 8 : day === 1;
+
+                          const effectiveSteps = order.isCustom ? [
+                            { label: 'Pago confirmado', sublabel: 'Confirmado al instante', completed: true, active: false },
+                            { label: 'Solicitud en confección', sublabel: 'Patronaje iniciado', completed: true, active: false },
+                            { label: 'En confección artesanal', sublabel: day >= 7 ? 'Finalizado' : day === 0 ? '5–7 días hábiles' : `Día ${day} de 7 hábiles`, completed: day >= 7, active: day > 0 && day < 7 },
+                            { label: 'Preparando envío', sublabel: day >= 8 ? 'Listo para despacho' : 'Control de calidad', completed: day >= 8, active: day === 7 },
+                            { label: 'Enviado a domicilio', sublabel: day >= 9 ? '¡Entregado!' : 'Express', completed: day >= 9, active: day === 8 },
+                          ] : [
+                            { label: 'Pago confirmado', sublabel: 'Confirmado al instante', completed: true, active: false },
+                            { label: 'Pedido registrado', sublabel: 'En preparación', completed: true, active: false },
+                            { label: 'En camino a tu dirección', sublabel: day >= 2 ? '¡Entregado!' : day === 1 ? 'Repartidor en camino' : '1–3 días hábiles', completed: day >= 2, active: day === 1 },
+                          ];
+
+                          return (
+                            <div style={{ padding: isMobile ? '16px 18px 20px' : '20px 28px 24px' }}>
+                              {/* Header: title + day counter + advance button */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                                  SEGUIMIENTO DEL PEDIDO
+                                  {day > 0 && (
+                                    <span style={{ color: BRAND_COLOR, marginLeft: 8, fontWeight: 700 }}>· Día {day}</span>
                                   )}
                                 </div>
-                                {/* Step info */}
-                                <div style={{ paddingTop: 2, flex: 1 }}>
-                                  <div style={{
-                                    fontSize: 14,
-                                    fontWeight: step.completed ? 600 : 400,
-                                    color: step.completed ? '#ffffff' : 'rgba(255,255,255,0.3)',
-                                    marginBottom: 2,
-                                  }}>
-                                    {step.label}
+                                {!isComplete ? (
+                                  <button
+                                    onClick={() => setSimDays(prev => ({ ...prev, [order.id]: (prev[order.id] ?? 0) + 1 }))}
+                                    style={{
+                                      backgroundColor: 'transparent',
+                                      border: `1px solid ${BRAND_COLOR}60`,
+                                      color: BRAND_COLOR,
+                                      borderRadius: 6,
+                                      padding: '5px 11px',
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      fontFamily: 'Inter, sans-serif',
+                                      letterSpacing: '0.3px',
+                                      transition: 'background 0.15s',
+                                    }}
+                                  >
+                                    Avanzar día →
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 700, letterSpacing: '0.3px' }}>✓ COMPLETADO</span>
+                                )}
+                              </div>
+
+                              {/* Steps timeline */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {effectiveSteps.map((step, idx, arr) => {
+                                  const dotBg   = step.completed ? BRAND_COLOR : step.active ? '#f59e0b' : '#242424';
+                                  const lineBg  = step.completed ? BRAND_COLOR : '#242424';
+                                  const txtColor = step.completed ? '#ffffff' : step.active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.3)';
+                                  const subColor = step.completed ? 'rgba(255,255,255,0.4)' : step.active ? '#f59e0b' : 'rgba(255,255,255,0.2)';
+                                  return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                                        <div style={{
+                                          width: 24, height: 24, borderRadius: '50%',
+                                          backgroundColor: dotBg,
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          fontSize: 11,
+                                          boxShadow: step.completed ? `0 0 0 3px ${BRAND_COLOR}20` : step.active ? '0 0 0 3px #f59e0b30' : 'none',
+                                        }}>
+                                          {step.completed
+                                            ? <span style={{ color: '#fff' }}>✓</span>
+                                            : step.active
+                                              ? <span style={{ color: '#fff', fontSize: 8 }}>●</span>
+                                              : <span style={{ color: '#555', fontSize: 8 }}>●</span>}
+                                        </div>
+                                        {idx < arr.length - 1 && (
+                                          <div style={{ width: 2, height: 28, backgroundColor: lineBg, marginTop: 2 }} />
+                                        )}
+                                      </div>
+                                      <div style={{ paddingTop: 2, flex: 1 }}>
+                                        <div style={{ fontSize: 14, fontWeight: step.completed || step.active ? 600 : 400, color: txtColor, marginBottom: 2 }}>
+                                          {step.label}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: subColor }}>
+                                          {step.sublabel}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Delivery card — shown when repartidor is in transit */}
+                              {isDeliveryDay && (
+                                <div style={{
+                                  marginTop: 18,
+                                  backgroundColor: '#071a0f',
+                                  border: '1px solid #22c55e50',
+                                  borderRadius: 12,
+                                  padding: '16px 18px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 10,
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ fontSize: 20 }}>🛵</span>
+                                    <span style={{ fontSize: 13, fontWeight: 800, color: '#22c55e', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                      Repartidor en camino
+                                    </span>
                                   </div>
-                                  <div style={{ fontSize: 11, color: step.completed ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)' }}>
-                                    {step.sublabel}
+                                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                                    {order.isCustom
+                                      ? 'Tu prenda artesanal está siendo entregada a tu domicilio ahora mismo.'
+                                      : 'Tu pedido está en camino a tu domicilio ahora mismo.'}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Repartidor:</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#ffffff' }}>Carlos A.</span>
+                                  </div>
+                                  <a
+                                    href="tel:+51974832156"
+                                    style={{
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                      backgroundColor: '#22c55e',
+                                      color: '#ffffff',
+                                      borderRadius: 8,
+                                      padding: '11px 14px',
+                                      fontSize: 13,
+                                      fontWeight: 700,
+                                      textDecoration: 'none',
+                                      letterSpacing: '0.3px',
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    📞 +51 974 832 156 · Llamar al repartidor
+                                  </a>
+                                </div>
+                              )}
+
+                              {/* Completion banner */}
+                              {isComplete && (
+                                <div style={{
+                                  marginTop: 18,
+                                  backgroundColor: '#071a0f',
+                                  border: '1px solid #22c55e40',
+                                  borderRadius: 10,
+                                  padding: '14px 16px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                }}>
+                                  <span style={{ fontSize: 22 }}>✅</span>
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: '#22c55e' }}>¡Pedido entregado!</div>
+                                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                                      Gracias por tu compra en RomeFit. ¡Luce bien!
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
