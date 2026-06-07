@@ -42,6 +42,7 @@ const PRODUCTS: Product[] = [
     name: 'STRONG LEGACY RELAX TEE',
     price: 'S/. 79.00',
     image: img23,
+    tag: 'LIMITADA',
   },
   {
     id: 'essential-regular',
@@ -51,6 +52,48 @@ const PRODUCTS: Product[] = [
     tag: 'BESTSELLER',
   },
 ];
+
+/* ── Tag colour lookup ───────────────────────────────────────── */
+const TAG_BG: Record<string, string> = {
+  BESTSELLER: '#000000',
+  LIMITADA:   '#7c3aed',
+};
+const TAG_LABEL: Record<string, string> = {
+  LIMITADA: 'EDICIÓN LIMITADA',
+};
+function tagBg(tag: string): string { return TAG_BG[tag] ?? '#e00'; }
+function tagLabel(tag: string): string { return TAG_LABEL[tag] ?? tag; }
+
+function ProductTag({ tag }: Readonly<{ tag: string }>) {
+  return (
+    <div style={{
+      position: 'absolute', top: 10, left: 10,
+      backgroundColor: tagBg(tag),
+      color: '#ffffff',
+      fontSize: 9, fontWeight: 700, letterSpacing: '0.8px',
+      padding: '4px 10px', borderRadius: 20,
+    }}>
+      {tagLabel(tag)}
+    </div>
+  );
+}
+
+/* ── Collection filter helpers ───────────────────────────────── */
+type Collection = 'nuevos' | 'bestsellers' | 'limitada' | null;
+
+const COLLECTION_LABEL: Record<NonNullable<Collection>, string> = {
+  nuevos:      'NUEVOS LANZAMIENTOS',
+  bestsellers: 'BESTSELLERS',
+  limitada:    'EDICIÓN LIMITADA',
+};
+
+function productMatchesCollection(product: Product, col: Collection): boolean {
+  if (!col) return true;
+  if (col === 'nuevos')      return product.tag === 'NEW';
+  if (col === 'bestsellers') return product.tag === 'BESTSELLER';
+  if (col === 'limitada')    return product.tag === 'LIMITADA';
+  return true;
+}
 
 /* ── Product Card (sin selector de tallas) ──────────────────── */
 function ProductCard({
@@ -103,18 +146,7 @@ function ProductCard({
           }}
         />
         {product.tag && (
-          <div style={{
-            position: 'absolute',
-            top: 10, left: 10,
-            backgroundColor: product.tag === 'BESTSELLER' ? C.black : C.red,
-            color: C.white,
-            fontSize: 9, fontWeight: 700,
-            letterSpacing: '0.8px',
-            padding: '4px 10px',
-            borderRadius: 20,
-          }}>
-            {product.tag}
-          </div>
+          <ProductTag tag={product.tag} />
         )}
       </div>
 
@@ -333,6 +365,10 @@ export function HomePage({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [wizardSize, setWizardSize] = useState<SizeName>('M');
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [activeCollection, setActiveCollection] = useState<Collection>(null);
+
+  const filteredProducts = PRODUCTS.filter(p => productMatchesCollection(p, activeCollection));
+  const sectionTitle = activeCollection ? COLLECTION_LABEL[activeCollection] : 'NEW ARRIVALS';
 
   /* After wizard completes → show product picker */
   function handleWizardDone(size: SizeName) {
@@ -376,8 +412,8 @@ export function HomePage({
         onLogout={onLogout}
         onProductSelect={(id) => { onProductSelect?.(id); }}
         onSearch={(query) => { console.log('Buscando:', query); }}
-        onViewAllClick={() => { console.log('Ver todo'); }}
-        onCollectionClick={(collection) => { console.log('Colección:', collection); }}
+        onViewAllClick={() => setActiveCollection(null)}
+        onCollectionClick={(col) => setActiveCollection(col as Collection)}
       />
 
       {/* ── Hero: image-17 as full-width banner (4 personas) ── */}
@@ -423,19 +459,19 @@ export function HomePage({
             margin: 0,
             letterSpacing: '-0.5px',
           }}>
-            NEW ARRIVALS
+            {sectionTitle}
           </h2>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
+          <button
+            onClick={() => setActiveCollection(null)}
             style={{
-              fontSize: 12, color: C.black, fontWeight: 600,
-              textDecoration: 'none', letterSpacing: '0.3px',
-              display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 12, color: activeCollection ? C.red : C.black,
+              fontWeight: 600, letterSpacing: '0.3px', fontFamily: 'Inter, sans-serif',
+              display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, padding: 0,
             }}
           >
             VER TODO →
-          </a>
+          </button>
         </div>
 
         {/* 4-column grid */}
@@ -444,14 +480,18 @@ export function HomePage({
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
           gap: isMobile ? 12 : 20,
         }}>
-          {PRODUCTS.map((product) => (
+          {filteredProducts.length > 0 ? filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               onBuyNow={handleBuyNow}
               isMobile={isMobile}
             />
-          ))}
+          )) : (
+            <div style={{ gridColumn: '1 / -1', padding: '48px 0', textAlign: 'center', color: '#888', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+              No hay productos en esta colección.
+            </div>
+          )}
         </div>
       </section>
 
