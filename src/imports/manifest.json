@@ -1,0 +1,7 @@
+{
+  "name": "RomeFit Design System Builder",
+  "id": "romefit-ds-builder-2026",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"]
+}

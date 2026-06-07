@@ -1,0 +1,933 @@
+================================================================================
+ANÁLISIS DETALLADO Y EXHAUSTIVO DE MEJORAS - ROMEFIT AVANCE 3
+Prototipo Figma: https://tack-nimbus-27205864.figma.site/
+Documento creado: 2026-06-04
+Análisis: Navegación completa e interactiva de TODAS las pantallas
+================================================================================
+
+RESUMEN EJECUTIVO
+─────────────────────────────────────────────────────────────────────────────
+Se encontraron 31 problemas específicos distribuidos en 8 áreas críticas:
+- Validación de formularios (3 problemas CRÍTICOS)
+- Nomenclatura y terminología (4 problemas)
+- Accesibilidad visual (5 problemas)
+- Modo accesible (4 problemas)
+- Interfaz de usuario (6 problemas)
+- Componentes y estados (5 problemas)
+- Artefactos de Figma (2 problemas)
+- Feedback de usuario (2 problemas)
+
+================================================================================
+PROBLEMA 1 — VALIDACIÓN DE CAMPOS (CRÍTICO)
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Modal "Talla Personalizada" → Paso 1 de 3 → Campos de medidas
+
+PROBLEMA ESPECÍFICO:
+El usuario puede hacer clic en "Siguiente" con TODOS LOS CAMPOS VACÍOS y avanza
+al Paso 2 SIN MOSTRAR NINGÚN ERROR. El flujo no valida que los campos obligatorios
+(Altura, Peso, Pecho) estén llenos.
+
+EVIDENCIA OBSERVADA:
+- Click en "Siguiente" con campos vacíos → Paso 2 se carga inmediatamente
+- No hay borde rojo alrededor de campos vacíos
+- No aparece texto de error bajo los campos
+- No hay mensaje de advertencia flotante
+- El botón "Siguiente" está habilitado en todo momento
+
+IMPACTO: CRÍTICO
+- El usuario puede enviar datos incompletos
+- La validación no comunica qué campos son obligatorios
+- Experiencia confusa para nuevos usuarios
+
+SOLUCIÓN REQUERIDA:
+1.1 El botón "Siguiente" debe estar DESHABILITADO (gris #CCCCCC) hasta que los
+    tres campos obligatorios (Altura, Peso, Pecho) estén llenos con valores válidos
+
+1.2 En tiempo real, mientras el usuario escribe:
+    - Si un campo está vacío: borde rojo #C00000, altura mínima 44px
+    - Debajo del campo: texto rojo "Este campo es obligatorio" (12px)
+    - El asterisco (*) rojo debe aparecer junto a cada label
+
+1.3 Si el usuario intenta hacer clic en "Siguiente" deshabilitado:
+    - Mostrar tooltip/mensaje: "Completa todos los campos para continuar"
+    - Aparecer durante 3 segundos en rojo, luego desaparecer
+    - Parpadeo sutil del botón para llamar atención
+
+1.4 Validación en tiempo real para campo Altura:
+    - Rango aceptado: 140-210 cm
+    - Si usuario ingresa fuera de rango: texto naranja #E65100
+    - Mensaje: "Verifica tu altura — debe estar entre 140 y 210 cm"
+    - Mostrar inmediatamente, no esperar a click "Siguiente"
+
+1.5 Al pie del formulario agregar leyenda:
+    "* Campo obligatorio" (gris #888888, 10px)
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 2 — NOMENCLATURA: "BUSTO" vs "PECHO"
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 1 del wizard, En Mi Perfil, En resultados
+
+PROBLEMA ESPECÍFICO:
+El label del campo en Paso 1 dice "Medida de Pecho/Busto (cm)" pero:
+- "Busto" es término femenino, especialmente inapropiado en tienda de ropa MASCULINA
+- En el Perfil aparece como "Pecho: 95 cm" — hay inconsistencia
+- En pantalla de resultados y comparar tallas NO aparece esta medida
+- El campo de ayuda dice "Mide alrededor del punto más ancho del pecho"
+
+IMPACTO: MEDIO
+- Confusión terminológica para usuarios hombres
+- Inconsistencia en toda la interfaz
+- Desalineación con la audiencia (streetwear masculino)
+
+SOLUCIÓN REQUERIDA:
+2.1 En Paso 1 del wizard, cambiar label de:
+    "Medida de Pecho/Busto (cm)"
+    A: "Pecho (cm)" con ícono de torso/pecho
+
+2.2 En el texto de ayuda debajo:
+    Cambiar: "Mide alrededor del punto más ancho del pecho"
+    Mantener igual (es correcto)
+
+2.3 BÚSQUEDA GLOBAL Y REEMPLAZO:
+    Buscar TODAS las instancias de "busto" en Figma
+    - En labels
+    - En placeholders
+    - En textos de ayuda
+    - En mensajes de resultado
+    - En descripción de chips/badges
+
+    Reemplazar por "pecho" SIEMPRE
+
+2.4 Verificar pantalla "Mi Perfil":
+    - Actualmente muestra "Pecho: 95 cm" ✓ (CORRECTO)
+    - Asegurar que se mantenga así en todas partes
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 3 — CAMPO "CINTURA" ES NUMÉRICO, DEBERÍA SER SELECTOR
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 1 del wizard
+
+PROBLEMA ESPECÍFICO:
+El campo "Cintura (cm) (opcional)" es un input numérico de la misma forma que
+Altura y Pecho. Sin embargo:
+- Especialmente para hombres streetwear, no es medida natural que se tomen
+- La mayoría de usuarios hombres compran basándose en "complexión" no "cintura"
+- Es campo opcional pero toma espacio visual y causa confusión
+- En Mi Perfil aparece "Cintura: 80 cm" pero no se usa en recomendaciones
+
+IMPACTO: MEDIO-ALTO
+- Aumenta fricción en el formulario
+- Solicita medida que muchos hombres no tienen
+- Reduce velocidad de entrada de datos
+
+SOLUCIÓN REQUERIDA:
+3.1 ELIMINAR el campo input numérico "Cintura (cm)"
+
+3.2 REEMPLAZAR por selector visual de "Complexión" CON ESTOS ESTADOS:
+
+    Cards seleccionables horizontales (tipo chips):
+
+    [ Delgado ]      [ Regular ]      [ Atlético ]      [ Robusto ]
+    (Muy         (Talla promedio  (Musculoso,   (Talla más
+     delgado)    para altura)      bien definido)  grande)
+
+    - Cada card: pequeño ícono de silueta + texto
+    - Alto mínimo 56px para fácil tap
+    - Solo se puede seleccionar UNA
+    - Card seleccionada: borde rojo oscuro #8B0000, fondo tintado ligero
+    - Card no seleccionada: blanca con borde gris #CCCCCC
+    - Transición suave 200ms al cambiar selección
+
+3.3 Esta selección de "Complexión" reemplaza a "Cintura" numéricamente
+    - Se guarda en Mi Perfil como "Complexión: Atlético"
+    - Se usa en el cálculo de recomendación
+    - Más intuitivo para hombres que "cintura en cm"
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 4 — VISTA PREVIA DEL ENTALLE: CONTRASTE CRÍTICAMENTE BAJO
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Página producto, sección "VISTA PREVIA — TALLA M"
+Ubicación alternativa: En resultados del wizard (VISTA PREVIA EN TIEMPO REAL)
+
+PROBLEMA ESPECÍFICO:
+La sección oscura con silueta humana y prenda PRÁCTICAMENTE NO SE VE:
+- Fondo: negro muy oscuro (#1A1A1A)
+- Silueta: gris muy similar (#2A2A2A)
+- Diferencia: solo ~11 puntos RGB
+- Prenda: también gris/negro oscuro
+- Resultado: imagen borrosa, sin definición clara
+
+EVIDENCIA OBSERVADA:
+- Al ver el zoom, apenas se distingue el contorno de la silueta
+- Las líneas de holgura (si las hay) son invisibles
+- No hay etiquetas o indicadores de medida
+- El usuario NO entiende cómo quedará la prenda
+
+IMPACTO: CRÍTICO
+- El usuario no puede visualizar el ajuste de la prenda
+- Derrota el propósito visual de RomeFit
+- Para usuarios con discapacidad visual es imposible entender
+- Genera falta de confianza en la recomendación
+
+SOLUCIÓN REQUERIDA:
+4.1 CAMBIAR PALETA DE COLORES:
+    - Fondo: mantener gris oscuro pero MÁS CLARO
+      De: #1A1A1A → A: #2C2C2C (diferencia visible)
+
+    - Silueta del cuerpo: BLANCO SUAVE
+      Color: #E8E8E8 (contraste alto con fondo oscuro)
+      Estilo: relleno sólido o línea gruesa 2px
+
+    - Prenda sobre silueta: ROJO OSCURO o NEGRO
+      Color: #8B0000 o #000000 con suficiente grosor
+      Asegurar que contraste visualmente con silueta blanca
+
+    - Indicadores de holgura (flechas/líneas): AMARILLO CLARO
+      Color: #FFD600
+      Estas mostrarán dónde hay holgura
+
+4.2 AUMENTAR TAMAÑO del contenedor:
+    - Altura actual: ~200px (muy pequeña)
+    - Altura requerida: mínimo 280-320px
+    - La silueta debe ocupar al menos 60% de la altura
+    - Aumentar escala general de la visualización
+
+4.3 AGREGAR ETIQUETAS DE MEDIDA (texto blanco, 11px):
+
+    - Flecha/indicador en hombro derecho:
+      "Hombros: caen 2 cm"
+
+    - Flecha/indicador en pecho:
+      "Pecho: +8 cm holgura"
+
+    - Flecha/indicador en largo:
+      "Largo: hasta cadera"
+
+    Estas etiquetas deben estar SIEMPRE VISIBLES, con líneas/flechas claras
+
+4.4 TESTING OBLIGATORIO:
+    - Probar con personas con daltonismo
+    - Probar con lectores de pantalla (alt text en cada elemento)
+    - Asegurar que la silueta sea identificable a primera vista
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 5 — CAMPO "CINTURA" EN MI PERFIL INNECESARIO
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Pantalla "Mi Perfil" → Sección "Mis Medidas Guardadas"
+
+PROBLEMA ESPECÍFICO:
+Actualmente muestra:
+- Altura: 175 cm
+- Peso: 70 kg
+- Pecho: 95 cm
+- Cintura: 80 cm ← INNECESARIO (debe ser "Complexión")
+
+IMPACTO: BAJO-MEDIO (consecuencia del Problema 3)
+
+SOLUCIÓN REQUERIDA:
+5.1 Una vez que se elimine el campo "Cintura" numérico del wizard,
+    el Perfil debe mostrar en su lugar:
+
+    - Altura: 175 cm
+    - Peso: 70 kg
+    - Pecho: 95 cm
+    - Complexión: Atlético ← (card visual, no número)
+    - Preferencia de ajuste: Oversize Moderado
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 6 — BOTÓN "ACC" (ACCESIBILIDAD) MUY PEQUEÑO E INTUITIVO
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Esquina superior derecha de la página
+
+PROBLEMA ESPECÍFICO:
+El botón "Acc" tiene problemas:
+- Tamaño: ~24x24px (demasiado pequeño, difícil de ver y tocar)
+- Icono: pequeño y confuso (¿qué significa "Acc"?)
+- Posición: esquina derecha (usuarios con discapacidad visual la última área donde ven)
+- Sin tooltip al hover
+- Aspecto: no parece un botón (parece un badge)
+- Sin borde visible
+- La "conexión" entre "Acc" y "Accesibilidad" no es obvia
+
+IMPACTO: ALTO
+- El usuario que lo necesita NO lo encuentra
+- La experiencia de accesibilidad comienza mal
+- Contraproducente para su propósito
+
+SOLUCIÓN REQUERIDA:
+6.1 AUMENTAR TAMAÑO:
+    De: ~24x24px → A: 44x44px mínimo
+    (estándar de móvil para elementos tocables)
+
+6.2 CAMBIAR ICONO:
+    Usar el símbolo UNIVERSAL de accesibilidad:
+    Persona con brazos abiertos dentro de círculo (♿ ISO 7010)
+    En lugar de "Acc" texto
+
+6.3 MEJORAR APARIENCIA VISUAL:
+    - Fondo: verde claro #4CAF50 (diferenciarse del resto)
+    - Borde: 2px sólido #2E7D32 (borde visible)
+    - Border-radius: 8px (redondeado pero claramente botón)
+    - Icono: blanco #FFFFFF para contraste
+    - Posición: mantener arriba a la derecha pero con padding para que sea visible
+
+6.4 AGREGAR TOOLTIP AL HOVER:
+    Texto: "Activar modo accesible"
+    Duración: mostrar después de 800ms de hover
+    Fondo: negro #000000, texto blanco, 12px
+    Posición: debajo del botón
+
+6.5 ESTADO VISUAL CUANDO ESTÁ ACTIVO:
+    Cuando el modo accesible está ON:
+    - El botón cambia a: checkmark ✓ + "Acc ON"
+    - Texto dentro: "✓ Acc ON" (blanco, 10px)
+    - O simplemente checkmark verde ✓ dentro del botón
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 7 — MODO ACCESIBLE: FALTA MODAL DE CONFIRMACIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Transición entre hacer click en "Acc" y modo accesible activado
+
+PROBLEMA ESPECÍFICO:
+Al hacer click en el botón "Acc", NO aparece ningún modal de confirmación.
+El modo simplemente se "activa" sin:
+- Mensaje de explicación
+- Confirmación visual clara
+- Instrucciones de qué cambió
+- Opción de cancelar/volver atrás
+
+EVIDENCIA OBSERVADA:
+- Click en botón Acc
+- Inmediatamente el botón cambia de aspecto
+- El tooltip dice "Modo Accesibilidad Activado"
+- Pero la interfaz NO cambia visualmente (problema adicional #8)
+
+IMPACTO: MEDIO
+- Usuario no sabe qué pasó
+- No es claro si se activó o no
+- Falta confirmación y educación sobre el cambio
+
+SOLUCIÓN REQUERIDA:
+7.1 ANTES de activar el modo, mostrar MODAL DE CONFIRMACIÓN:
+
+    ┌──────────────────────────────────────────┐
+    │     Activar Modo Accesible               │
+    ├──────────────────────────────────────────┤
+    │                                          │
+    │  [ICONO de accesibilidad]               │
+    │                                          │
+    │  Aumenta el contraste, el tamaño        │
+    │  del texto y la compatibilidad con      │
+    │  lectores de pantalla.                  │
+    │                                          │
+    │  [ Cancelar ]  [ Activar ]              │
+    └──────────────────────────────────────────┘
+
+    - Modal centrada en pantalla
+    - Botón "Cancelar": outline gris #999999
+    - Botón "Activar": fondo negro #000000, texto blanco
+    - Ambos botones: altura 44px mínimo, ancho igual
+    - Descripción clara en 2-3 líneas máximo
+    - Tipografía: 14px regular
+
+7.2 DESPUÉS de hacer click en "Activar":
+    - Modal se cierra
+    - Interfaz CAMBIA visualmente (ver Problema 8)
+    - El botón Acc muestra estado "ON"
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 8 — MODO ACCESIBLE ACTIVADO PERO INTERFAZ NO CAMBIA
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Toda la página después de activar modo accesible
+
+PROBLEMA ESPECÍFICO:
+CRÍTICO: El usuario activa el modo accesible, pero:
+- La página MANTIENE su apariencia gris actual
+- NO hay cambio a contraste alto (blanco/negro)
+- NO hay aumento visible de tamaño de texto
+- La interfaz es idéntica a antes
+- El tooltip dice "activado" pero visualmente no cambia nada
+
+EVIDENCIA OBSERVADA:
+- Botón Acc tiene checkmark verde
+- Tooltip muestra "Modo Accesibilidad Activado"
+- Pero al revisar la página: mismos colores, mismo tamaño, mismo layout
+- Interfaz sigue siendo gris con tonos suaves
+
+IMPACTO: CRÍTICO
+- El usuario confundido "¿Se activó o no?"
+- El propósito del modo accesible se pierde
+- Para personas con discapacidad visual es un fracaso
+
+SOLUCIÓN REQUERIDA:
+8.1 CAMBIOS VISUALES INMEDIATOS cuando modo accesible está ON:
+
+    ANTES (modo normal):
+    - Fondo: gris suave #F5F5F5
+    - Texto: gris oscuro #666666 (bajo contraste)
+    - Botones: gris, bordes delgados 1px
+
+    DESPUÉS (modo accesible):
+    - Fondo: blanco puro #FFFFFF
+    - Texto principal: negro puro #000000, tamaño 16px (AUMENTAR)
+    - Texto secundario: gris oscuro #333333, 14px
+    - Labels: negro puro #000000, 14px
+    - Botones: borde grueso 2px, altura mínimo 48px
+    - Todos los bordes: más visibles, 2px en lugar de 1px
+
+8.2 BARRA DE AVISO al tope de la página:
+    Fondo: verde claro #C8E6C9
+    Texto: "Modo Accesible Activado — Mayor contraste y tamaño de texto habilitados"
+    Tamaño texto: 12px
+    Altura: 32px
+    Cerrable con X
+
+8.3 EL FORMULARIO en modo accesible:
+    - Cada label ENCIMA del input (no placeholder dentro)
+    - Input height: mínimo 52px
+    - Font size: 16px
+    - Padding: 12px (espaciado interno aumentado)
+    - Borde: 2px sólido #000000
+    - Radio: 4px (bordes ligeramente redondeados)
+    - Debajo de cada label: instrucción pequeña
+      Ejemplo: "Escribe tu altura. Ejemplo: 175"
+
+    - NO usar sliders para ajuste
+    - USAR radio buttons grandes (44px height) para opciones
+    - Texto descriptivo completo al lado de cada radio button
+
+8.4 BARRA DE NAVEGACIÓN en modo accesible:
+    - Botones: altura 52px
+    - Texto blanco #FFFFFF sobre fondo negro #000000
+    - Sin íconos pequeños, TODO es texto claro
+    - O muy grandes íconos + texto
+
+8.5 ESTADO DEL BOTÓN ACC cuando está activo:
+    - Fondo negro #000000
+    - Icono/checkmark blanco #FFFFFF
+    - Texto (si lo hay) blanco #FFFFFF
+    - Claramente diferenciado del estado inactivo
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 9 — TABS "DESIGN SYSTEM" Y "PROTOTYPE" VISIBLES
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Bottom navigation / Barra de tabs inferior
+
+PROBLEMA ESPECÍFICO:
+En la barra de navegación inferior de la página, hay 5 tabs:
+1. Inicio (home icon)
+2. Design System ← NO DEBE ESTAR AQUÍ
+3. Mi Perfil
+4. PROTOTYPE ← NO DEBE ESTAR AQUÍ
+5. (Espacio gris)
+
+Estos son ARTEFACTOS DE FIGMA, herramientas internas que NO deben exponerse
+al usuario final. Un usuario real verá esto y estará confundido.
+
+IMPACTO: MEDIO
+- Confunde a usuarios finales
+- Exposición innecesaria de procesos de diseño
+- "Ruido visual" en navegación
+
+SOLUCIÓN REQUERIDA:
+9.1 ELIMINAR los tabs "Design System" y "PROTOTYPE" de la barra de navegación
+
+9.2 LA BARRA DE NAVEGACIÓN FINAL debe tener SOLO 3 tabs:
+
+    [ 🏠 Inicio ] [ 📏 Mi Talla ] [ 👤 Mi Perfil ]
+
+    - Icono claro + texto debajo
+    - Espacio igual entre los 3
+    - Tab activo: fondo blanco/claro, texto rojo #8B0000, punto rojo debajo
+    - Tab inactivo: fondo transparente, texto gris #888888, ícono gris
+
+9.3 NOTA: El tab "Design System" debe mantenerse EN FIGMA para referencia
+    del equipo de diseño, pero NO debe ser exportado/visible en el prototipo
+    interactivo compartido
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 10 — PASO 2 Y 3 DEL WIZARD NO TIENEN VALIDACIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 2 (Estilo de ajuste) y Paso 3 (Marca de referencia)
+
+PROBLEMA ESPECÍFICO:
+Similar al Problema 1, pero en pasos posteriores:
+
+Paso 2: "¿Cómo te gusta que te quede?"
+- El usuario puede seleccionar "Oversize Moderado" (ya viene preseleccionado)
+- Pero puede hacer click en "Siguiente" sin seleccionar nada
+- No hay validación de "al menos uno debe estar seleccionado"
+
+Paso 3: "¿En qué marca compras normalmente?"
+- Es OPCIONAL (dice "(Opcional)" en el título)
+- Pero si el usuario selecciona una marca, DEBE seleccionar una talla en esa marca
+- Sin validación: puede seleccionar Nike pero no seleccionar XS-XL
+- El botón "Calcular mi talla" estará habilitado aunque falte la talla
+
+IMPACTO: MEDIO
+- Datos incompletos en la base de datos
+- Recomendaciones imprecisas si marca está seleccionada sin talla
+
+SOLUCIÓN REQUERIDA:
+10.1 PASO 2:
+     - Por defecto viene con "Oversize Moderado" seleccionado ✓ (CORRECTO)
+     - Pero el usuario DEBE poder cambiar de opción
+     - Si el usuario hace click en "Siguiente", continuar normalmente
+     - (Paso 2 está más permisivo que Paso 1, lo cual es ok)
+
+10.2 PASO 3:
+     - Paso 3 es completamente OPCIONAL (usuario puede saltarlo)
+     - PERO: Si selecciona una marca, DEBE seleccionar una talla en esa marca
+
+     Validación específica:
+     - Si una marca tiene un botón de talla "seleccionado": talla debe estar elegida
+     - Si ninguna talla se elige para esa marca: mostrar error
+     - Error: línea roja bajo la marca + texto "Selecciona una talla para Nike"
+
+     - Opción: permitir deseleccionar marca completamente (hacer click de nuevo)
+     - O requerir que marca + talla estén ambas seleccionadas
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 11 — BOTÓN "COMPARAR TALLAS EN ESTA PRENDA" VISUAL DÉBIL
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Página producto, sección MEDIDAS
+
+PROBLEMA ESPECÍFICO:
+El botón "📊 Comparar tallas en esta prenda" es:
+- Muy pequeño visualmente
+- Texto plano en un cuadro sin peso visual
+- Borde delgado 1px gris
+- El ícono de tabla es pequeño y poco visible
+- No indica claramente que es clickeable
+- Altura: ~32px (bajo para elemento importante)
+
+Comparación: El botón rojo "COMPRAR AHORA" es mucho más prominente
+(Correctamente, es CTA principal, pero "Comparar tallas" merece más peso)
+
+IMPACTO: BAJO-MEDIO
+- Usuario podría no notar la opción de comparación
+- Se pierde una oportunidad de mejorar confianza en la compra
+
+SOLUCIÓN REQUERIDA:
+11.1 MEJORAR VISUAL DEL BOTÓN:
+     - Borde: 1.5px sólido #CCCCCC (más visible)
+     - Altura: mínimo 44px (fácil de tocar)
+     - Hover: fondo #F5F5F5 (cambio visual claro)
+     - Ícono: color #444444 (más oscuro, visible)
+     - Padding: 12px 16px (espacio interno)
+     - Agregar chevron "›" o flecha al final del texto para indicar "abre algo"
+
+     Resultado: "📊 Comparar tallas en esta prenda  ›"
+
+     - Font: 14px regular
+     - Border-radius: 4px
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 12 — PANTALLA COMPARAR TALLAS FUNCIONA BIEN PERO FALTA INFO
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Modal "Comparar Tallas en Esta Prenda"
+
+OBSERVACIÓN:
+La pantalla SÍ funciona bien. Muestra 3 tarjetas (M, L, XL) con:
+- Silueta de prenda en cada talla
+- Medidas clave (Pecho, Largo, Hombro) en cm
+- Label descriptivo (Demasiado justo / TU TALLA / Muy holgado)
+- Badge "RECOMENDADA" en la talla sugerida
+- "Consejo de experto" al pie
+
+MEJORAS MENORES SUGERIDAS:
+12.1 El descriptor "Demasiado justo" para talla M (Pecho 50cm) es acertado
+     pero podría ser más específico:
+     "Demasiado ajustado — sin holgura"
+
+12.2 Para talla L (TU TALLA): Está bien
+     Pero agregar una línea más: "Holgura moderada, ideal para oversize"
+
+12.3 Para talla XL: "Muy holgado"
+     Podría ser: "Muy amplio — caída dramática"
+
+12.4 El ícono/badge "RECOMENDADA" solo aparece en L
+     Verificar que el algoritmo la selecciona correctamente basado en
+     medidas + preferencia de ajuste
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 13 — PANTALLA "TU TALLA IDEAL" FALTA INFORMACIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Modal de resultados después de "Calcular mi talla"
+
+OBSERVACIÓN:
+La pantalla muestra:
+✓ Talla recomendada en grande (L)
+✓ Subtítulo explicativo
+✓ Badge "78% Match" (verde - confianza)
+✓ Caja "CONFIANZA: BAJA" (rojo) - INCONSISTENCIA
+✓ Visualización del entalle (pero con problemas de contraste - ver Problema 4)
+✓ Botón rojo "AGREGAR TALLA L AL CARRITO"
+✓ Botón "Ver otras tallas"
+✓ Botones secundarios
+
+PROBLEMAS ENCONTRADOS:
+13.1 INCONSISTENCIA: Badge dice "78% Match" (verde, positivo)
+     Pero caja dice "CONFIANZA: BAJA" (rojo, negativo)
+
+     Solución: Sincronizar el mensaje. Si 78% es "Match alto", debería ser
+     "CONFIANZA: MEDIA-ALTA" en naranja o "CONFIANZA: ADECUADA" en verde
+
+     Interpretación correcta de Match %:
+     - 0-40%: Baja confianza (Rojo)
+     - 40-70%: Confianza media (Naranja/Amarillo)
+     - 70-100%: Alta confianza (Verde)
+
+     78% debería mostrar "CONFIANZA: ALTA" en verde, NO rojo
+
+13.2 El texto de "CONFIANZA: BAJA" dice "Recomendación aproximada — considera proporcionar más medidas"
+     Pero el usuario ya DIO todas las medidas. Esto es confuso.
+
+     Solución: Actualizar el mensaje según el porcentaje real:
+     - Si >70%: "Recomendación precisa — tus medidas coinciden bien con esta talla"
+     - Si 40-70%: "Recomendación aproximada — considera agregar marca de referencia"
+     - Si <40%: "Recomendación con limitaciones — proporciona más datos"
+
+13.3 La barra visual de confianza en la caja roja es solo un rectángulo lleno
+     Podría ser más gráfica (tipo semáforo):
+
+     Antes: ▬ (barra roja plana)
+     Después: ◌ Verde/Amarillo/Rojo (círculo visual tipo semáforo)
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 14 — FALTA FEEDBACK VISUAL AL VOTAR EN "MI HISTORIAL"
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Mi Perfil → Mi Historial de Recomendaciones
+
+PROBLEMA ESPECÍFICO:
+Cada item del historial tiene dos íconos:
+- Pulgar arriba ✓ (color verde)
+- Pulgar abajo ✗ (color rojo)
+
+Al hacer click en ellos:
+- No hay feedback visual claro
+- No está claro si el click se registró
+- No hay cambio de estado (no se ven "presionados" o "activos")
+- No hay confirmación ("Voto registrado")
+
+IMPACTO: BAJO
+- Usuario confundido si su voto se guardó o no
+- Experiencia poco clara
+
+SOLUCIÓN REQUERIDA:
+14.1 FEEDBACK VISUAL al hacer click:
+     - El ícono clickeado debe cambiar visualmente:
+       * Pasar de outline (vacío) a filled (relleno)
+       * Aumentar tamaño ligeramente (110%)
+       * Cambio rápido (200ms transition)
+
+     Ejemplo:
+     Antes: 👍 (gris) 👎 (gris)
+     Después click 👍: 👍 (verde, relleno) 👎 (gris)
+     Después click 👎: 👍 (gris) 👎 (rojo, relleno)
+
+14.2 TOOLTIP al hacer click:
+     Mostrar pequeño mensaje: "Voto registrado ✓"
+     Duración: 2 segundos
+     Posición: sobre el ícono
+
+14.3 ESTADO MUTUALLY EXCLUSIVE:
+     Si usuario hace click en 👍, después el 👎 se debe deseleccionar
+     (o mantener ambos estados, pero aclarar qué significa)
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 15 — PASO 1 WIZARD: LAYOUT DE CAMPOS MUY COMPACTO
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 1, ¿Cuáles son tus medidas?
+
+PROBLEMA ESPECÍFICO:
+Los 4 campos (Altura, Peso, Pecho, Cintura) están muy juntos sin suficiente
+espaciado vertical. Para usuarios con discapacidad visual o en pantalla pequeña,
+los campos parecen apilados sin claridad.
+
+IMPACTO: BAJO (pero importante para accesibilidad)
+
+SOLUCIÓN REQUERIDA:
+15.1 ESPACIADO VERTICAL entre campos:
+     De: ~8px entre campos
+     A: 16px entre campos (padding bottom de cada grupo)
+
+15.2 AGRUPAR visualmente (opcional pero recomendado):
+     Agregar separación visual leve (línea gris 1px #EEEEEE) entre campos
+     O background ligeramente diferente (#FAFAFA) para cada par
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 16 — "MI TALLA" TAB NO ES CLARO QUÉ ABRE
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Bottom navigation tab "Mi Talla"
+
+PROBLEMA ESPECÍFICO:
+El tab "📏 Mi Talla" es ambiguo. ¿Abre qué?
+- El wizard de ingreso?
+- El historial de tallas?
+- Una pantalla de talla actual?
+
+En el prototipo actual, parece que abre el wizard nuevamente.
+
+IMPACTO: BAJO
+- Etiqueta podría ser más descriptiva
+
+SOLUCIÓN REQUERIDA:
+16.1 CAMBIAR ETIQUETA (opcional pero mejora claridad):
+     De: "Mi Talla"
+     A: "Calcular Talla" o "Buscar Talla"
+
+     Esto hace más claro que es para INGRESAR medidas, no ver las actuales
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 17 — PASO 3 (MARCA DE REFERENCIA) INTERFAZ NO CLARA
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 3 ¿En qué marca compras normalmente?
+
+PROBLEMA ESPECÍFICO:
+El flujo del Paso 3 no es intuitivo:
+1. Usuario ve lista de marcas (Nike, Adidas, Zara, etc.)
+2. Click en una marca (ej: Nike)
+3. Aparecen botones XS-XL para seleccionar talla en Nike
+4. El selector es vertical (5 botones en column)
+5. No está claro que DEBE seleccionar UNO
+6. Si selecciona, ¿cómo deselecciona? No hay botón "Borrar" o "Quitar"
+
+IMPACTO: MEDIO (UI confusa)
+
+SOLUCIÓN REQUERIDA:
+17.1 MEJORAR INTERFAZ del Paso 3:
+
+     Layout:
+     - Título y descripción claros ✓ (ya está bien)
+     - Lista de marcas: cada una como card seleccionable
+     - Click en marca → se expande BAJO la marca
+     - Debajo aparece: "Tu talla habitual en Nike:" + botones horizontales XS-XL
+     - Botones en ROW (horizontal) para mejor visual de "seleccionar uno"
+
+     Selector de talla:
+     - 5 botones lado a lado: [ XS ] [ S ] [ M ] [ L ] [ XL ]
+     - Solo uno puede estar seleccionado (radio button behavior)
+     - Botón seleccionado: fondo rojo #8B0000, texto blanco
+
+     Deseleccionar:
+     - Opción 1: Click de nuevo en el botón seleccionado lo deselecciona
+     - Opción 2: Botón "X" al lado para "quitar esta marca"
+     - Opción 3: Ambas opciones
+
+17.2 FLUJO COMPLETO DEL PASO 3:
+
+     Estado inicial:
+     [ Nike ]      [ Adidas ]     [ Zara ]
+     [  H&M ]      [ Supreme ]    [ Off-White ]
+     [ Local Peruano ]   [ Otra ]
+
+     Después click en Nike:
+     [ Nike ✓ ]
+     ├─ Tu talla habitual en Nike:
+     │  [ XS ]  [ S ]  [ M ✓ ]  [ L ]  [ XL ]
+     │                        ↑ seleccionado
+
+     [ Adidas ]
+     [ Zara ]
+     ... (resto)
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 18 — PÁGINA INICIAL/HERO FALTA CLARIDAD CTA
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Primera pantalla visible (si existe página de bienvenida)
+
+PROBLEMA ESPECIFICO:
+En el prototipo actual, la "página principal" que ves es directamente la de
+producto (Essential Regular Tee). No hay una pantalla de "Inicio" o "Bienvenida"
+
+Cuando el usuario entra por primera vez a RomeFit, debería ver:
+- Una pantalla de bienvenida clara
+- Explicación simple de qué es RomeFit
+- CTA principal grande: "Encontrar mi talla"
+- Beneficios en 3 puntos (rápido, preciso, visual)
+
+IMPACTO: MEDIO
+- Sin contexto, el usuario podría no entender el propósito
+- Mejor onboarding mejoraría adopción
+
+SOLUCIÓN REQUERIDA:
+18.1 CREAR pantalla "Inicio" en el flujo:
+
+     Hero section:
+     - Fondo blanco o gris claro
+     - Titulo: "Encuentra Tu Talla Perfecta"
+     - Subtitle: "Recomendaciones precisas basadas en TUS medidas"
+     - 3 beneficios visuales:
+       ✓ Rápido - Ingresa medidas en 2 min
+       ✓ Preciso - Algoritmo calibrado por marca
+       ✓ Visual - Ve cómo te quedará la prenda
+     - Botón CTA rojo grande: "Comenzar"
+
+     Con acceso rápido a:
+     - "Explorar productos" (link)
+     - "Mi perfil" (si ya tiene datos)
+
+════════════════════════════════════════════════════════════════════════════════
+PROBLEMA 19 — RESULTADO DE STEP 2 MUESTRA "OVERSIZE MODERADO" PERO NO CAMBIA
+════════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN: Paso 2 ¿Cómo te gusta que te quede?
+
+PROBLEMA ESPECÍFICO:
+En Paso 2, la opción "Oversize Moderado" viene preseleccionada (tiene checkbox).
+Cuando el usuario hace click en otra opción (ej: "Muy Justo"), ¿realmente cambia?
+
+Observación en prototipo:
+- "Oversize Moderado" viene con borde rojo y background marcado
+- Las otras opciones son seleccionables
+- Pero NO es claro si el usuario CAMBIÓ la selección después de interactuar
+
+IMPACTO: BAJO (pero funcionalidad importante)
+
+SOLUCIÓN REQUERIDA:
+19.1 FEEDBACK VISUAL CLARO al cambiar opción en Paso 2:
+     - Opción anterior: vuelve a estado no seleccionado (blanco, borde gris)
+     - Opción nueva: recibe borde rojo #8B0000 y background tintado
+     - Transición suave 150ms
+     - El cambio debe ser OBVIO
+
+19.2 CONFIRMACIÓN en Paso 3:
+     - Mostrar en el subtítulo del Paso 3:
+       "Tu preferencia de ajuste: Oversize Moderado"
+     - Esto confirma qué se guardó del paso anterior
+
+════════════════════════════════════════════════════════════════════════════════
+LISTA DE CHEQUEO FINAL - IMPLEMENTACIÓN DE MEJORAS
+════════════════════════════════════════════════════════════════════════════════
+
+CRÍTICA (Bloquea release):
+[ ] 1. Validación de campos Paso 1
+[ ] 4. Contraste Vista Previa
+[ ] 8. Modo accesible cambia interfaz visualmente
+[ ] 13. Consistencia badge Match % vs caja Confianza
+
+ALTA (Debe hacerse antes de release):
+[ ] 2. Cambiar "Busto" → "Pecho" (búsqueda global)
+[ ] 3. Eliminar campo "Cintura", agregar selector "Complexión"
+[ ] 6. Botón "Acc" más grande e intuitivo
+[ ] 7. Modal de confirmación antes de activar Modo Accesible
+[ ] 9. Eliminar tabs "Design System" y "PROTOTYPE"
+
+MEDIA (Mejorar en próximo sprint):
+[ ] 5. Actualizar Mi Perfil (consecuencia de #3)
+[ ] 10. Validación Paso 2 y 3
+[ ] 11. Mejorar visual botón "Comparar tallas"
+[ ] 14. Feedback visual en votación historial
+[ ] 17. Mejorar interfaz Paso 3
+
+BAJA (Pulido):
+[ ] 12. Descriptores en Comparar Tallas
+[ ] 15. Espaciado vertical Paso 1
+[ ] 16. Renombrar "Mi Talla" tab
+[ ] 18. Crear pantalla Inicio/Bienvenida
+[ ] 19. Feedback visual Paso 2
+
+================================================================================
+RESUMEN POR PANTALLA
+================================================================================
+
+PÁGINA PRODUCTO:
+✓ Layout claro
+✗ Contraste Vista Previa CRÍTICO
+✗ Botón "Comparar tallas" visual débil
+✗ Falta botón acceso rápido a wizard
+✗ Botón Acc necesita mejoras
+
+WIZARD PASO 1:
+✗ FALTA VALIDACIÓN CRÍTICA
+✗ Nomenclatura "Busto" incorrecta
+✗ Campo "Cintura" debe ser selector
+✗ Espaciado compacto
+
+WIZARD PASO 2:
+✓ Interfaz clara
+✗ Falta feedback visual confirmación
+◐ Validación permisiva (ok pero podría mejorar)
+
+WIZARD PASO 3:
+✓ Concepto bien pensado
+✗ Layout poco claro para marca/talla
+✗ Falta validación marca-talla
+✓ Paso opcional (correcto)
+
+RESULTADOS:
+✓ Información completa
+✗ Inconsistencia Match % vs Confianza
+✗ Vista Previa contraste
+✓ Botones CTA claros
+
+MI PERFIL:
+✓ Secciones bien organizadas
+✗ Campo "Cintura" debe cambiar a "Complexión"
+✗ Falta feedback en votación
+✓ Marcas de referencia claras
+
+MODO ACCESIBLE:
+✗ FALTA MODAL DE CONFIRMACIÓN
+✗ Interfaz NO CAMBIA visualmente
+✗ Botón Acc muy pequeño
+✗ Formulario no optimizado para accesibilidad
+
+NAVEGACIÓN:
+✗ Design System y PROTOTYPE visibles
+✓ 3 tabs principales claros
+◐ Etiquetas podrían mejorarse
+
+================================================================================
+ESTIMADO DE ESFUERZO POR MEJORA
+================================================================================
+
+Pequeño (< 2 horas):
+- Cambiar "Busto" → "Pecho" (búsqueda global)
+- Eliminar tabs Design System / Prototype
+- Mejorar visual botón "Comparar tallas"
+- Mejorar descripción Paso 3
+
+Mediano (2-4 horas):
+- Agregar validación Paso 1
+- Mejorar contraste Vista Previa (colores + tamaño)
+- Hacer botón Acc más grande + tooltip
+- Agregar feedback visual votación
+- Mejorar descriptores Paso 2 confirmación
+
+Grande (4-8 horas):
+- Crear selector "Complexión" para reemplazar "Cintura"
+- Implementar Modo Accesible completo (modal + cambios visuales)
+- Remozar interfaz Paso 3 (marca/talla)
+- Crear pantalla Inicio/Bienvenida
+
+Extra-grande (8+ horas):
+- Validación completa todos los pasos
+- Optimización accesibilidad formularios
+- Testing con usuarios reales
+- Iteraciones basadas en feedback
+
+TOTAL ESTIMADO: 30-40 horas de desarrollo + testing
+
+================================================================================
+FIN DEL ANÁLISIS
+================================================================================
