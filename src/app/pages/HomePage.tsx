@@ -514,57 +514,6 @@ export function HomePage({
         </div>
       </section>
 
-      {/* ── RomeFit CTA ── */}
-      <section style={{
-        maxWidth: 1300,
-        margin: '0 auto',
-        padding: isMobile ? '36px 16px' : isTablet ? '48px 24px' : '56px 40px',
-      }}>
-        <div style={{
-          backgroundColor: C.black,
-          borderRadius: 10,
-          padding: isMobile ? '28px 22px' : '36px 48px',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-          gap: 20,
-        }}>
-          <div>
-            <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: C.red, letterSpacing: '1.5px', marginBottom: 8 }}>
-              TECNOLOGÍA ROMEFIT AI
-            </div>
-            <div style={{ fontSize: isMobile ? 20 : 28, fontWeight: 800, color: C.white, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
-              ¿No sabes tu talla?<br />
-              <span style={{ color: '#b0b0b0', fontStyle: 'italic', fontWeight: 700 }}>
-                Te ayudamos a encontrarla.
-              </span>
-            </div>
-            <p style={{ fontSize: 13, color: '#777', margin: '10px 0 0', lineHeight: 1.5 }}>
-              Ingresa tus medidas y RomeFit calculará tu talla perfecta. Luego selecciona tu prenda favorita.
-            </p>
-          </div>
-          <button
-            onClick={() => setWizardOpen(true)}
-            style={{
-              backgroundColor: C.white,
-              color: C.black,
-              border: 'none',
-              borderRadius: 6,
-              padding: isMobile ? '12px 24px' : '14px 36px',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              whiteSpace: 'nowrap',
-              fontFamily: 'Inter, sans-serif',
-              flexShrink: 0,
-            }}
-          >
-            ⚙️ CALCULAR MI TALLA
-          </button>
-        </div>
-      </section>
 
       {/* ── Rome Kids section (sin botón) ── */}
       <div style={{
