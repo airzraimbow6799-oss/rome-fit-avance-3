@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { C, SizeName, SIZES } from '../components/romefit/tokens';
 import { SizeButton, SizePreviewPanel, MatchBadge } from '../components/romefit/SharedComponents';
 import { Mannequin } from '../components/romefit/Mannequin';
+import { Mannequin3D } from '../components/romefit/Mannequin3D';
 import { WizardModal } from '../components/romefit/WizardModal';
 import { SizeGuideModal } from '../components/romefit/SizeGuideModal';
 import { CheckoutModal } from '../components/romefit/CheckoutModal';
@@ -508,7 +509,7 @@ export function ProductPage({
               <>
                 <div style={{ backgroundColor: '#2C2C2C', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ width: 64, height: 108 }}>
-                    <Mannequin size={activeSize} shirtColor={shirtColor} dark hasLongSleeves={product.hasLongSleeves} className="w-full h-full" />
+                    <Mannequin3D size={activeSize} shirtColor={shirtColor} dark className="w-full h-full" />
                   </div>
                 </div>
                 <div style={{ flex: 1, padding: '12px 16px' }}>
@@ -522,12 +523,12 @@ export function ProductPage({
                 <div style={{ fontSize: 9, fontWeight: 700, color: '#888', letterSpacing: '1.4px', textAlign: 'center', paddingTop: 12, paddingBottom: 6 }}>
                   VISTA PREVIA — TALLA {activeSize} · CORTE {product.fit.toUpperCase()}
                 </div>
-                <div style={{ backgroundColor: '#2C2C2C', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', minHeight: 280, position: 'relative' }}>
-                  <div style={{ width: 120, height: 200, position: 'relative', zIndex: 1 }}>
-                    <Mannequin size={activeSize} shirtColor={shirtColor} dark hasLongSleeves={product.hasLongSleeves} className="w-full h-full" />
+                <div style={{ backgroundColor: '#1e1e1e', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minHeight: 280, position: 'relative' }}>
+                  <div style={{ width: '100%', height: 280, position: 'relative', zIndex: 1 }}>
+                    <Mannequin3D size={activeSize} shirtColor={shirtColor} dark style={{ borderRadius: 0 }} />
                   </div>
                   {/* Measurement annotation labels */}
-                  <div style={{ position: 'absolute', right: 14, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', paddingTop: 16, paddingBottom: 16 }}>
+                  <div style={{ position: 'absolute', right: 14, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', paddingTop: 16, paddingBottom: 16, zIndex: 2, pointerEvents: 'none' }}>
                     {product.measurementLabels.map((item) => (
                       <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 4, padding: '3px 7px' }}>
                         <span style={{ color: '#FFD600', fontSize: 11 }}>{item.icon}</span>
