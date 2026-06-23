@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, Center } from '@react-three/drei';
+import { useGLTF, OrbitControls, Stage, Bounds, Center } from '@react-three/drei';
 import * as THREE from 'three';
 import { SIZE_DATA, SizeName } from './tokens';
 
@@ -10,18 +10,15 @@ useGLTF.preload('/models/oversized_t-shirt.glb');
 function HumanModel() {
   const { scene } = useGLTF('/models/male_human_a_pose.glb');
   const cloned = useRef<THREE.Group | null>(null);
-
   if (!cloned.current) {
     cloned.current = scene.clone(true);
   }
-
   return <primitive object={cloned.current} />;
 }
 
 function ShirtModel({ size, color }: { size: SizeName; color: string }) {
   const { scene } = useGLTF('/models/oversized_t-shirt.glb');
   const cloned = useRef<THREE.Group | null>(null);
-  const colorRef = useRef(color);
 
   if (!cloned.current) {
     cloned.current = scene.clone(true);
@@ -29,7 +26,6 @@ function ShirtModel({ size, color }: { size: SizeName; color: string }) {
 
   useEffect(() => {
     if (!cloned.current) return;
-    colorRef.current = color;
     cloned.current.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh && mesh.material) {
@@ -48,17 +44,18 @@ function ShirtModel({ size, color }: { size: SizeName; color: string }) {
   const data = SIZE_DATA[size];
   const scaleX = 1.0 + (data.wm - 0.38) * 0.18;
   const scaleY = 1.0 + (data.lm - 0.35) * 0.14;
-  const scaleZ = scaleX;
 
-  return <primitive object={cloned.current} scale={[scaleX, scaleY, scaleZ]} />;
+  return <primitive object={cloned.current} scale={[scaleX, scaleY, scaleX]} />;
 }
 
-function LoadingFallback() {
+function SceneContent({ size, color }: { size: SizeName; color: string }) {
   return (
-    <mesh>
-      <boxGeometry args={[0.1, 0.1, 0.1]} />
-      <meshBasicMaterial color="#444" />
-    </mesh>
+    <Bounds fit clip observe margin={1.3}>
+      <Center>
+        <HumanModel />
+        <ShirtModel size={size} color={color} />
+      </Center>
+    </Bounds>
   );
 }
 
@@ -77,41 +74,32 @@ export function Mannequin3D({
   className = '',
   style,
 }: Mannequin3DProps) {
-  const bg = dark ? '#1e1e1e' : '#f0f0f0';
-
   return (
     <div
       className={className}
-      style={{ width: '100%', height: '100%', background: bg, borderRadius: 'inherit', ...style }}
+      style={{ width: '100%', height: '100%', ...style }}
     >
       <Canvas
-        camera={{ position: [0, 1.1, 3.2], fov: 42 }}
-        gl={{ antialias: true, alpha: true }}
+        camera={{ position: [0, 0, 10], fov: 50 }}
+        gl={{ antialias: true }}
         style={{ width: '100%', height: '100%' }}
       >
-        <ambientLight intensity={dark ? 0.6 : 0.8} />
-        <directionalLight position={[2, 4, 3]} intensity={1.2} castShadow />
-        <directionalLight position={[-2, 2, -1]} intensity={0.4} />
+        <color attach="background" args={[dark ? '#1e1e1e' : '#f0f0f0']} />
 
-        {dark ? (
-          <Environment preset="night" />
-        ) : (
-          <Environment preset="apartment" />
-        )}
+        <ambientLight intensity={dark ? 1.0 : 1.4} />
+        <directionalLight position={[3, 10, 5]} intensity={dark ? 1.0 : 1.5} castShadow />
+        <directionalLight position={[-3, 5, -2]} intensity={0.4} />
+        <directionalLight position={[0, -3, 5]} intensity={0.2} />
 
-        <Suspense fallback={<LoadingFallback />}>
-          <Center>
-            <HumanModel />
-            <ShirtModel size={size} color={shirtColor} />
-          </Center>
+        <Suspense fallback={null}>
+          <SceneContent size={size} color={shirtColor} />
         </Suspense>
 
         <OrbitControls
           enableZoom={false}
           enablePan={false}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={Math.PI / 1.8}
-          autoRotate={false}
+          minPolarAngle={Math.PI / 6}
+          maxPolarAngle={Math.PI / 1.5}
         />
       </Canvas>
     </div>
