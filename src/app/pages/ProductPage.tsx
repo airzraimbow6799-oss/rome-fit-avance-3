@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { C, SizeName, SIZES } from '../components/romefit/tokens';
 import { SizeButton, SizePreviewPanel, MatchBadge } from '../components/romefit/SharedComponents';
 import { Mannequin } from '../components/romefit/Mannequin';
+import { Mannequin3D } from '../components/romefit/Mannequin3D';
 import { WizardModal } from '../components/romefit/WizardModal';
 import { SizeGuideModal } from '../components/romefit/SizeGuideModal';
 import { CheckoutModal } from '../components/romefit/CheckoutModal';
@@ -507,8 +508,8 @@ export function ProductPage({
             {isMobile ? (
               <>
                 <div style={{ backgroundColor: '#2C2C2C', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ width: 64, height: 108 }}>
-                    <Mannequin size={activeSize} shirtColor={shirtColor} dark hasLongSleeves={product.hasLongSleeves} className="w-full h-full" />
+                  <div style={{ width: 84, height: 128 }}>
+                    <Mannequin3D size={activeSize} shirtColor={shirtColor} className="w-full h-full" />
                   </div>
                 </div>
                 <div style={{ flex: 1, padding: '12px 16px' }}>
@@ -523,8 +524,8 @@ export function ProductPage({
                   VISTA PREVIA — TALLA {activeSize} · CORTE {product.fit.toUpperCase()}
                 </div>
                 <div style={{ backgroundColor: '#2C2C2C', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', minHeight: 280, position: 'relative' }}>
-                  <div style={{ width: 120, height: 200, position: 'relative', zIndex: 1 }}>
-                    <Mannequin size={activeSize} shirtColor={shirtColor} dark hasLongSleeves={product.hasLongSleeves} className="w-full h-full" />
+                  <div style={{ width: 200, height: 260, position: 'relative', zIndex: 1 }}>
+                    <Mannequin3D size={activeSize} shirtColor={shirtColor} className="w-full h-full" />
                   </div>
                   {/* Measurement annotation labels */}
                   <div style={{ position: 'absolute', right: 14, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', paddingTop: 16, paddingBottom: 16 }}>

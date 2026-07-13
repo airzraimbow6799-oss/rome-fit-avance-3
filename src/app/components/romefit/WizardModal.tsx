@@ -4,6 +4,7 @@ import { C, SIZE_DATA, SizeName, SIZES, ALL_SIZES } from './tokens';
 import { useResponsive } from '../../hooks/useResponsive';
 import { MatchBadge } from './SharedComponents';
 import { Mannequin } from './Mannequin';
+import { Mannequin3D } from './Mannequin3D';
 
 /* ── Types ──────────────────────────────────────────────────────── */
 type FitStyle = 'Muy Justo' | 'Justo' | 'Oversize Moderado' | 'Oversize Extremo';
@@ -1218,18 +1219,15 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
             <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: '#666', cursor: 'pointer', lineHeight: 1, flexShrink: 0 }}>✕</button>
             {/* Compact mannequin */}
             <div style={{ backgroundColor: '#1a1a1a', borderRadius: 6, padding: '6px 10px', flexShrink: 0 }}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${liveSize}-${data.fitStyle}`}
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.18 }}
-                  style={{ width: 52, height: 84 }}
-                >
-                  <Mannequin size={liveSize} shirtColor={shirtColor} dark className="w-full h-full" />
-                </motion.div>
-              </AnimatePresence>
+              <div style={{ width: 62, height: 94 }}>
+                <Mannequin3D
+                  size={liveSize}
+                  shirtColor={shirtColor}
+                  wizard={{ altura: data.altura, peso: data.peso, pecho: data.pecho, complexion: data.complexion, fitStyle: data.fitStyle }}
+                  interactive={false}
+                  className="w-full h-full"
+                />
+              </div>
             </div>
             {/* Size + progress info */}
             <div style={{ flex: 1 }}>
@@ -1445,18 +1443,16 @@ export function WizardModal({ open, onClose, onSizeSelected, shirtColor = '#ffff
               minHeight: 0,
             }}
           >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${liveSize}-${data.fitStyle}`}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.22 }}
-                style={{ width: 130, height: 200 }}
-              >
-                <Mannequin size={liveSize} shirtColor={shirtColor} dark className="w-full h-full" />
-              </motion.div>
-            </AnimatePresence>
+            {/* Avatar 3D persistente: los morphs se interpolan en vivo,
+                NO se re-monta al cambiar talla (mantiene el contexto WebGL) */}
+            <div style={{ width: '100%', height: '100%', minHeight: 200 }}>
+              <Mannequin3D
+                size={liveSize}
+                shirtColor={shirtColor}
+                wizard={{ altura: data.altura, peso: data.peso, pecho: data.pecho, complexion: data.complexion, fitStyle: data.fitStyle }}
+                className="w-full h-full"
+              />
+            </div>
           </div>
 
           {/* Stats + Talla estimada */}

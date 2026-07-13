@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { C, SizeName, SIZE_DATA, SIZES } from './tokens';
 import { useResponsive } from '../../hooks/useResponsive';
-import { Mannequin } from './Mannequin';
+import { Mannequin3D } from './Mannequin3D';
 
 interface SizeComparisonModalProps {
   open: boolean;
@@ -175,7 +175,7 @@ export function SizeComparisonModal({ open, onClose, currentSize, shirtColor = '
                   alignItems: 'center',
                 }}>
                   <div style={{ width: isMobile ? 70 : 90, height: isMobile ? 120 : 150 }}>
-                    <Mannequin size={size} shirtColor={shirtColor} className="w-full h-full" />
+                    <Mannequin3D size={size} shirtColor={shirtColor} interactive={false} className="w-full h-full" />
                   </div>
                 </div>
 
